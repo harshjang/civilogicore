@@ -39,15 +39,15 @@ export default function SurveyData() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6 pt-14 md:pt-8">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-mono font-bold text-foreground">Survey Data</h1>
-        <p className="text-sm text-muted-foreground font-mono mt-1">COORDINATE INPUT · LAYER MANAGEMENT · DWG EXPORT</p>
+        <h1 className="text-xl md:text-2xl font-mono font-bold text-foreground">Survey Data</h1>
+        <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">COORDINATE INPUT · LAYER MANAGEMENT · DWG EXPORT</p>
       </motion.div>
 
       {/* Source & Controls */}
       <motion.div
-        className="bg-card rounded-lg border border-border p-5 flex flex-wrap items-center gap-4"
+        className="bg-card rounded-lg border border-border p-4 md:p-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 md:gap-4"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -57,7 +57,7 @@ export default function SurveyData() {
           <span className="font-mono text-xs text-muted-foreground uppercase">Source:</span>
         </div>
         <Select value={source} onValueChange={setSource}>
-          <SelectTrigger className="w-48 font-mono text-sm bg-secondary border-border">
+          <SelectTrigger className="w-full sm:w-48 font-mono text-sm bg-secondary border-border">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -68,12 +68,12 @@ export default function SurveyData() {
           </SelectContent>
         </Select>
 
-        <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" className="font-mono text-xs gap-2">
+        <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial">
             <Upload className="w-3.5 h-3.5" />
             Import CSV
           </Button>
-          <Button variant="outline" size="sm" className="font-mono text-xs gap-2">
+          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial">
             <Download className="w-3.5 h-3.5" />
             Export DWG
           </Button>
@@ -87,24 +87,24 @@ export default function SurveyData() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="p-5 border-b border-border flex items-center justify-between">
+        <div className="p-4 md:p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-primary" />
-            <h2 className="font-mono text-sm font-semibold text-foreground">POINT DATA</h2>
-            <span className="font-mono text-xs text-muted-foreground ml-2">({points.length} points)</span>
+            <h2 className="font-mono text-xs md:text-sm font-semibold text-foreground">POINT DATA</h2>
+            <span className="font-mono text-[10px] md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
           </div>
           <Button size="sm" onClick={addPoint} className="font-mono text-xs gap-2">
             <Plus className="w-3.5 h-3.5" />
-            Add Point
+            <span className="hidden sm:inline">Add Point</span>
           </Button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-border bg-secondary/30">
                 {["PT #", "EASTING (E)", "NORTHING (N)", "ELEVATION (Z)", "CODE", "LAYER", ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th key={h} className="px-3 md:px-4 py-3 text-left text-[10px] md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
                     {h}
                   </th>
                 ))}
@@ -113,48 +113,24 @@ export default function SurveyData() {
             <tbody>
               {points.map((pt) => (
                 <tr key={pt.id} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
-                  <td className="px-4 py-2">
-                    <Input
-                      value={pt.pointNo}
-                      onChange={(e) => updatePoint(pt.id, "pointNo", e.target.value)}
-                      className="w-16 h-8 font-mono text-xs bg-secondary border-border"
-                    />
+                  <td className="px-3 md:px-4 py-2">
+                    <Input value={pt.pointNo} onChange={(e) => updatePoint(pt.id, "pointNo", e.target.value)} className="w-14 md:w-16 h-8 font-mono text-xs bg-secondary border-border" />
                   </td>
-                  <td className="px-4 py-2">
-                    <Input
-                      value={pt.easting}
-                      onChange={(e) => updatePoint(pt.id, "easting", e.target.value)}
-                      className="w-32 h-8 font-mono text-xs bg-secondary border-border"
-                      placeholder="0.000"
-                    />
+                  <td className="px-3 md:px-4 py-2">
+                    <Input value={pt.easting} onChange={(e) => updatePoint(pt.id, "easting", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                   </td>
-                  <td className="px-4 py-2">
-                    <Input
-                      value={pt.northing}
-                      onChange={(e) => updatePoint(pt.id, "northing", e.target.value)}
-                      className="w-32 h-8 font-mono text-xs bg-secondary border-border"
-                      placeholder="0.000"
-                    />
+                  <td className="px-3 md:px-4 py-2">
+                    <Input value={pt.northing} onChange={(e) => updatePoint(pt.id, "northing", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                   </td>
-                  <td className="px-4 py-2">
-                    <Input
-                      value={pt.elevation}
-                      onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)}
-                      className="w-28 h-8 font-mono text-xs bg-secondary border-border"
-                      placeholder="0.000"
-                    />
+                  <td className="px-3 md:px-4 py-2">
+                    <Input value={pt.elevation} onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)} className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                   </td>
-                  <td className="px-4 py-2">
-                    <Input
-                      value={pt.code}
-                      onChange={(e) => updatePoint(pt.id, "code", e.target.value)}
-                      className="w-20 h-8 font-mono text-xs bg-secondary border-border"
-                      placeholder="Code"
-                    />
+                  <td className="px-3 md:px-4 py-2">
+                    <Input value={pt.code} onChange={(e) => updatePoint(pt.id, "code", e.target.value)} className="w-16 md:w-20 h-8 font-mono text-xs bg-secondary border-border" placeholder="Code" />
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="px-3 md:px-4 py-2">
                     <Select value={pt.layer} onValueChange={(v) => updatePoint(pt.id, "layer", v)}>
-                      <SelectTrigger className="w-28 h-8 font-mono text-xs bg-secondary border-border">
+                      <SelectTrigger className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -164,11 +140,8 @@ export default function SurveyData() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => removePoint(pt.id)}
-                      className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    >
+                  <td className="px-3 md:px-4 py-2">
+                    <button onClick={() => removePoint(pt.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </td>

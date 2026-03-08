@@ -1,5 +1,8 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, MapPin, MessageSquare, FileText, Calculator, Settings } from "lucide-react";
+import { LayoutDashboard, MapPin, MessageSquare, FileText, Calculator, Settings, Menu, X } from "lucide-react";
+import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -9,11 +12,11 @@ const navItems = [
   { to: "/estimations", icon: Calculator, label: "Estimations" },
 ];
 
-export default function AppSidebar() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
 
   return (
-    <aside className="w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
@@ -35,6 +38,7 @@ export default function AppSidebar() {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={onNavigate}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono transition-all duration-200 ${
                 isActive
                   ? "bg-primary/10 text-primary border-glow border"
@@ -55,6 +59,7 @@ export default function AppSidebar() {
       <div className="p-4 border-t border-sidebar-border">
         <NavLink
           to="/settings"
+          onClick={onNavigate}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
         >
           <Settings className="w-4 h-4" />
@@ -64,6 +69,32 @@ export default function AppSidebar() {
           <p className="font-mono text-[10px] text-muted-foreground">v1.0.0 · GEOSPATIAL</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+export default function AppSidebar() {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <button className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border text-foreground hover:bg-secondary transition-colors">
+            <Menu className="w-5 h-5" />
+          </button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
+          <SidebarContent onNavigate={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <aside className="w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
+      <SidebarContent />
     </aside>
   );
 }
