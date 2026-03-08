@@ -134,6 +134,7 @@ export default function Auth() {
     } else {
       setFailCount(0);
       setLockoutUntil(null);
+      triggerSplash();
     }
   };
 
