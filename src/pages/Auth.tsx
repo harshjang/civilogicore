@@ -177,12 +177,39 @@ export default function Auth() {
         {/* Logo & Title */}
         <div className="text-center mb-8">
           <motion.div
-            className="inline-block mb-4"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            className="inline-block mb-4 relative"
+            initial={{ scale: 0.6, opacity: 0, rotate: -10 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <img src={logo} alt="CiviLogiCore" className="w-24 h-24 mx-auto drop-shadow-[0_0_20px_hsl(187_80%_48%/0.3)]" />
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              initial={{ boxShadow: "0 0 0px hsl(187 80% 48% / 0)" }}
+              animate={{
+                boxShadow: [
+                  "0 0 0px hsl(187 80% 48% / 0)",
+                  "0 0 40px hsl(187 80% 48% / 0.4)",
+                  "0 0 20px hsl(187 80% 48% / 0.2)",
+                ],
+              }}
+              transition={{ duration: 2, delay: 0.5, ease: "easeOut" }}
+            />
+            <motion.img
+              src={logo}
+              alt="CiviLogiCore"
+              className="w-24 h-24 mx-auto"
+              initial={{ filter: "brightness(0) blur(8px)" }}
+              animate={{ filter: "brightness(1) blur(0px)" }}
+              transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+              style={{ filter: "drop-shadow(0 0 20px hsl(187 80% 48% / 0.3))" }}
+            />
+            {/* Scanning line effect */}
+            <motion.div
+              className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"
+              initial={{ top: "0%", opacity: 1 }}
+              animate={{ top: "100%", opacity: 0 }}
+              transition={{ duration: 1.5, delay: 0.4, ease: "easeInOut" }}
+            />
           </motion.div>
           <h1 className="font-mono text-2xl md:text-3xl font-bold text-foreground tracking-wider">
             <span className="text-gradient-cyan">C</span>IVI<span className="text-gradient-cyan">L</span>OGI<span className="text-gradient-cyan">C</span>ORE
