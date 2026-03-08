@@ -25,25 +25,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<Index />} />
-              <Route path="/survey" element={<SurveyData />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/documents" element={<Documents />} />
-              <Route path="/estimations" element={<Estimations />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <SplashScreen>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<Index />} />
+                <Route path="/survey" element={<SurveyData />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/documents" element={<Documents />} />
+                <Route path="/estimations" element={<Estimations />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </SplashScreen>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
