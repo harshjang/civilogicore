@@ -1,11 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, MapPin, MessageSquare, FileText, Calculator, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, MapPin, MessageSquare, FileText, Calculator, Settings, Menu, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/logo.png";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/survey", icon: MapPin, label: "Survey Data" },
   { to: "/chat", icon: MessageSquare, label: "AI Assistant" },
   { to: "/documents", icon: FileText, label: "Documents" },
