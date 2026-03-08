@@ -24,7 +24,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="CiviLogiCore" className="w-10 h-10 drop-shadow-[0_0_10px_hsl(187_80%_48%/0.3)]" />
+          <motion.img
+            src={logo}
+            alt="CiviLogiCore"
+            className="w-10 h-10"
+            initial={{ filter: "brightness(0) blur(4px)", scale: 0.7, opacity: 0 }}
+            animate={{ filter: "brightness(1) blur(0px)", scale: 1, opacity: 1 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            style={{ filter: "drop-shadow(0 0 10px hsl(187 80% 48% / 0.3))" }}
+          />
           <div>
             <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">
               <span className="text-gradient-cyan">C</span>IVI<span className="text-gradient-cyan">L</span>OGI<span className="text-gradient-cyan">C</span>ORE
