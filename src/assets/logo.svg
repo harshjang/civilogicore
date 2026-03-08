@@ -1,0 +1,49 @@
+<svg width="512" height="256" viewBox="0 0 512 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradMain" x1="64" y1="40" x2="448" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ED6D2"/>
+      <stop offset="1" stop-color="#0E2A4A"/>
+    </linearGradient>
+    <linearGradient id="gradDark" x1="120" y1="52" x2="390" y2="212" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#123D66"/>
+      <stop offset="1" stop-color="#08172F"/>
+    </linearGradient>
+    <filter id="glow" x="0" y="0" width="512" height="256" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Decorative blueprint lines -->
+  <g opacity="0.45" stroke="#2ED6D2" stroke-width="2" stroke-linecap="round">
+    <path d="M54 190H458"/>
+    <path d="M80 56L58 78"/>
+    <path d="M432 56L454 78"/>
+    <path d="M250 44V206" opacity="0.35"/>
+  </g>
+
+  <!-- Left C -->
+  <path d="M166 70C147 55 121 52 97 61C71 71 54 95 54 124C54 153 71 178 97 187C121 196 147 193 166 178" stroke="url(#gradMain)" stroke-width="24" stroke-linecap="round"/>
+  <path d="M157 78C142 67 122 65 105 72C84 80 70 100 70 124C70 148 84 168 105 176C122 183 142 181 157 170" stroke="url(#gradDark)" stroke-width="11" stroke-linecap="round" opacity="0.95"/>
+
+  <!-- L -->
+  <path d="M208 58V186H301" stroke="url(#gradMain)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M216 66V178H294" stroke="url(#gradDark)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+
+  <!-- Right C -->
+  <path d="M446 70C427 55 401 52 377 61C351 71 334 95 334 124C334 153 351 178 377 187C401 196 427 193 446 178" stroke="url(#gradMain)" stroke-width="24" stroke-linecap="round"/>
+  <path d="M437 78C422 67 402 65 385 72C364 80 350 100 350 124C350 148 364 168 385 176C402 183 422 181 437 170" stroke="url(#gradDark)" stroke-width="11" stroke-linecap="round" opacity="0.95"/>
+
+  <!-- Circuit accents -->
+  <g filter="url(#glow)" stroke="#2ED6D2" stroke-width="3" stroke-linecap="round" opacity="0.85">
+    <path d="M92 52H126"/>
+    <circle cx="131" cy="52" r="2.5" fill="#2ED6D2" stroke="none"/>
+    <path d="M382 52H416"/>
+    <circle cx="421" cy="52" r="2.5" fill="#2ED6D2" stroke="none"/>
+    <path d="M248 208H280"/>
+    <circle cx="285" cy="208" r="2.5" fill="#2ED6D2" stroke="none"/>
+  </g>
+</svg>
