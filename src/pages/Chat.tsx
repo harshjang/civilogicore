@@ -3,11 +3,15 @@ import { motion } from "framer-motion";
 import { Send, Bot, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 const suggestions = [
   "Calculate earthwork volume for a road embankment",
@@ -15,6 +19,86 @@ const suggestions = [
   "Explain RCC design mix ratios",
   "Convert UTM to geographic coordinates",
 ];
+
+async function streamChat({
+  messages,
+  onDelta,
+  onDone,
+}: {
+  messages: Message[];
+  onDelta: (text: string) => void;
+  onDone: () => void;
+}) {
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(err.error || `HTTP ${resp.status}`);
+  }
+
+  if (!resp.body) throw new Error("No response body");
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = "";
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || line.trim() === "") continue;
+      if (!line.startsWith("data: ")) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") {
+        streamDone = true;
+        break;
+      }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        textBuffer = line + "\n" + textBuffer;
+        break;
+      }
+    }
+  }
+
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split("\n")) {
+      if (!raw) continue;
+      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+      if (raw.startsWith(":") || raw.trim() === "") continue;
+      if (!raw.startsWith("data: ")) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
+  }
+
+  onDone();
+}
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -28,23 +112,37 @@ export default function Chat() {
 
   const sendMessage = async (text?: string) => {
     const msg = text || input;
-    if (!msg.trim()) return;
+    if (!msg.trim() || isLoading) return;
     setInput("");
 
     const userMsg: Message = { role: "user", content: msg };
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `I can help with that! As a civil engineering AI assistant, I can assist with structural calculations, survey data processing, material estimations, and geospatial analysis.\n\nTo provide a detailed answer about "${msg}", I'll need Lovable Cloud to be enabled for AI capabilities. Would you like to set that up?`,
-        },
-      ]);
+    let assistantSoFar = "";
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        }
+        return [...prev, { role: "assistant", content: assistantSoFar }];
+      });
+    };
+
+    try {
+      await streamChat({
+        messages: updatedMessages,
+        onDelta: upsertAssistant,
+        onDone: () => setIsLoading(false),
+      });
+    } catch (e: any) {
+      console.error(e);
       setIsLoading(false);
-    }, 1000);
+      toast.error(e.message || "Failed to get AI response");
+    }
   };
 
   return (
@@ -107,13 +205,19 @@ export default function Chat() {
               </div>
             )}
             <div
-              className={`max-w-[85%] md:max-w-[70%] rounded-lg px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm whitespace-pre-wrap ${
+              className={`max-w-[85%] md:max-w-[70%] rounded-lg px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm ${
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "bg-card border border-border text-foreground"
               }`}
             >
-              {msg.content}
+              {msg.role === "assistant" ? (
+                <div className="prose prose-sm prose-invert max-w-none">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              ) : (
+                <span className="whitespace-pre-wrap">{msg.content}</span>
+              )}
             </div>
             {msg.role === "user" && (
               <div className="w-7 h-7 md:w-8 md:h-8 rounded-md bg-secondary flex items-center justify-center shrink-0">
@@ -123,7 +227,7 @@ export default function Chat() {
           </motion.div>
         ))}
 
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex gap-3">
             <div className="w-7 h-7 md:w-8 md:h-8 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
               <Bot className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary animate-pulse-cyan" />
