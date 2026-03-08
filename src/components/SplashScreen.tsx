@@ -19,7 +19,7 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (!show) return;
-    const timer = setTimeout(() => setShow(false), 4000);
+    const timer = setTimeout(() => setShow(false), 3000);
     return () => clearTimeout(timer);
   }, [show]);
 
