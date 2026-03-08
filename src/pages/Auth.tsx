@@ -41,6 +41,18 @@ export default function Auth() {
   });
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
 
+  // Sync fail count and lockout to localStorage
+  useEffect(() => {
+    localStorage.setItem("auth_fail_count", String(failCount));
+  }, [failCount]);
+  useEffect(() => {
+    if (lockoutUntil) {
+      localStorage.setItem("auth_lockout_until", String(lockoutUntil));
+    } else {
+      localStorage.removeItem("auth_lockout_until");
+    }
+  }, [lockoutUntil]);
+
   // OTP timer
   const [otpExpiry, setOtpExpiry] = useState<number | null>(null);
   const [otpRemaining, setOtpRemaining] = useState(0);
