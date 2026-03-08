@@ -26,9 +26,19 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Failed login tracking
-  const [failCount, setFailCount] = useState(0);
-  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  // Failed login tracking - persist in localStorage to survive refresh
+  const [failCount, setFailCount] = useState(() => {
+    const stored = localStorage.getItem("auth_fail_count");
+    return stored ? parseInt(stored, 10) : 0;
+  });
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    const stored = localStorage.getItem("auth_lockout_until");
+    if (stored) {
+      const val = parseInt(stored, 10);
+      return val > Date.now() ? val : null;
+    }
+    return null;
+  });
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
 
   // OTP timer
