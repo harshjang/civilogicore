@@ -26,7 +26,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <img src={logo} alt="CiviLogiCore" className="w-10 h-10 drop-shadow-[0_0_10px_hsl(187_80%_48%/0.3)]" />
           <div>
             <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">
-              <span className="text-gradient-cyan">C</span>ivi<span className="text-gradient-cyan">L</span>ogi<span className="text-gradient-cyan">C</span>ore
+              <span className="text-gradient-cyan">C</span>IVI<span className="text-gradient-cyan">L</span>OGI<span className="text-gradient-cyan">C</span>ORE
             </h1>
           </div>
         </div>
