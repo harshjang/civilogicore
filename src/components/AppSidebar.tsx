@@ -25,8 +25,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="flex items-center gap-3">
           <img src={logo} alt="CiviLogiCore" className="w-10 h-10 drop-shadow-[0_0_10px_hsl(187_80%_48%/0.3)]" />
           <div>
-            <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">CIVILOGI</h1>
-            <p className="font-mono text-[10px] text-muted-foreground tracking-widest">CORE</p>
+            <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">
+              <span className="text-gradient-cyan">C</span>ivi<span className="text-gradient-cyan">L</span>ogi<span className="text-gradient-cyan">C</span>ore
+            </h1>
           </div>
         </div>
       </div>
