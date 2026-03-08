@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
