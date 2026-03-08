@@ -57,7 +57,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-1">
         <NavLink
           to="/settings"
           onClick={onNavigate}
@@ -66,6 +66,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <Settings className="w-4 h-4" />
           <span>Settings</span>
         </NavLink>
+        <button
+          onClick={() => { signOut(); onNavigate?.(); }}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full text-left"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out</span>
+        </button>
         <div className="mt-4 px-4">
           <p className="font-mono text-[10px] text-muted-foreground">v1.0.0 · GEOSPATIAL</p>
         </div>
