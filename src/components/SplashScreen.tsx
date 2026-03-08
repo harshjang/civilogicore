@@ -1,17 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo.svg";
+
+interface SplashContextType {
+  triggerSplash: () => void;
+}
+
+const SplashContext = createContext<SplashContextType>({ triggerSplash: () => {} });
+
+export const useSplash = () => useContext(SplashContext);
 
 export default function SplashScreen({ children }: { children: React.ReactNode }) {
   const [show, setShow] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(false), 2000);
-    return () => clearTimeout(timer);
+  const triggerSplash = useCallback(() => {
+    setShow(true);
   }, []);
 
+  useEffect(() => {
+    if (!show) return;
+    const timer = setTimeout(() => setShow(false), 4000);
+    return () => clearTimeout(timer);
+  }, [show]);
+
   return (
-    <>
+    <SplashContext.Provider value={{ triggerSplash }}>
       <AnimatePresence>
         {show && (
           <motion.div
@@ -93,13 +106,13 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
                 className="h-full bg-primary rounded-full"
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
-                transition={{ duration: 1.2, delay: 1, ease: "easeInOut" }}
+                transition={{ duration: 3, delay: 0.5, ease: "easeInOut" }}
               />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
       {children}
-    </>
+    </SplashContext.Provider>
   );
 }
