@@ -95,19 +95,26 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
               Civil Engineering Intelligence Platform
             </motion.p>
 
-            {/* Loading bar */}
+            {/* Infinity loading symbol */}
             <motion.div
-              className="mt-8 w-48 h-0.5 bg-border rounded-full overflow-hidden"
+              className="mt-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
             >
-              <motion.div
-                className="h-full bg-primary rounded-full"
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 3, delay: 0.5, ease: "easeInOut" }}
-              />
+              <svg width="64" height="32" viewBox="0 0 64 32" fill="none" className="overflow-visible">
+                <motion.path
+                  d="M16 16C16 10 10 4 4 10C-2 16 4 28 16 16C28 4 34 10 40 16C46 22 52 28 58 22C64 16 58 4 48 16C38 28 28 22 16 16Z"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  fill="none"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 2, delay: 0.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+                  style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
+                />
+              </svg>
             </motion.div>
           </motion.div>
         )}
