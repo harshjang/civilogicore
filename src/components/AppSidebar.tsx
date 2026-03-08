@@ -16,18 +16,17 @@ const navItems = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center glow-cyan">
-            <MapPin className="w-5 h-5 text-primary" />
-          </div>
+          <img src={logo} alt="CiviLogiCore" className="w-10 h-10 drop-shadow-[0_0_10px_hsl(187_80%_48%/0.3)]" />
           <div>
-            <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">CIVIL</h1>
-            <p className="font-mono text-[10px] text-muted-foreground tracking-widest">ENGINEERING AGENT</p>
+            <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">CIVILOGI</h1>
+            <p className="font-mono text-[10px] text-muted-foreground tracking-widest">CORE</p>
           </div>
         </div>
       </div>
