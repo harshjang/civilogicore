@@ -185,7 +185,7 @@ export default function Auth() {
             <img src={logo} alt="CiviLogiCore" className="w-24 h-24 mx-auto drop-shadow-[0_0_20px_hsl(187_80%_48%/0.3)]" />
           </motion.div>
           <h1 className="font-mono text-2xl md:text-3xl font-bold text-foreground tracking-wider">
-            CIVILOGI<span className="text-gradient-cyan">CORE</span>
+            <span className="text-gradient-cyan">C</span>ivi<span className="text-gradient-cyan">L</span>ogi<span className="text-gradient-cyan">C</span>ore
           </h1>
           <p className="font-mono text-xs text-muted-foreground mt-2 tracking-widest uppercase">
             Civil Engineering Intelligence Platform
