@@ -1,11 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, MapPin, MessageSquare, FileText, Calculator, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, MapPin, MessageSquare, FileText, Calculator, Settings, Menu, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/logo.png";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/survey", icon: MapPin, label: "Survey Data" },
   { to: "/chat", icon: MessageSquare, label: "AI Assistant" },
   { to: "/documents", icon: FileText, label: "Documents" },
@@ -14,18 +16,17 @@ const navItems = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center glow-cyan">
-            <MapPin className="w-5 h-5 text-primary" />
-          </div>
+          <img src={logo} alt="CiviLogiCore" className="w-10 h-10 drop-shadow-[0_0_10px_hsl(187_80%_48%/0.3)]" />
           <div>
-            <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">CIVIL</h1>
-            <p className="font-mono text-[10px] text-muted-foreground tracking-widest">ENGINEERING AGENT</p>
+            <h1 className="font-mono text-sm font-bold text-foreground tracking-wider">CIVILOGI</h1>
+            <p className="font-mono text-[10px] text-muted-foreground tracking-widest">CORE</p>
           </div>
         </div>
       </div>
@@ -56,7 +57,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-1">
         <NavLink
           to="/settings"
           onClick={onNavigate}
@@ -65,6 +66,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <Settings className="w-4 h-4" />
           <span>Settings</span>
         </NavLink>
+        <button
+          onClick={() => { signOut(); onNavigate?.(); }}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full text-left"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out</span>
+        </button>
         <div className="mt-4 px-4">
           <p className="font-mono text-[10px] text-muted-foreground">v1.0.0 · GEOSPATIAL</p>
         </div>
