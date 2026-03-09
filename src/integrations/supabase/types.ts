@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      documents: {
+        Row: {
+          created_at: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          name: string
+          parent_folder_id: string | null
+          status: string
+          storage_path: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          status?: string
+          storage_path?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          status?: string
+          storage_path?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimations: {
+        Row: {
+          calc_type: string
+          created_at: string
+          depth: number
+          id: string
+          label: string | null
+          length: number
+          user_id: string
+          volume: number
+          width: number
+        }
+        Insert: {
+          calc_type?: string
+          created_at?: string
+          depth?: number
+          id?: string
+          label?: string | null
+          length?: number
+          user_id: string
+          volume?: number
+          width?: number
+        }
+        Update: {
+          calc_type?: string
+          created_at?: string
+          depth?: number
+          id?: string
+          label?: string | null
+          length?: number
+          user_id?: string
+          volume?: number
+          width?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -38,6 +124,48 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      survey_points: {
+        Row: {
+          code: string
+          created_at: string
+          easting: number
+          elevation: number
+          id: string
+          layer: string
+          northing: number
+          point_no: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          easting?: number
+          elevation?: number
+          id?: string
+          layer?: string
+          northing?: number
+          point_no?: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          easting?: number
+          elevation?: number
+          id?: string
+          layer?: string
+          northing?: number
+          point_no?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
