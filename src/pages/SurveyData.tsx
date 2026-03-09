@@ -28,6 +28,7 @@ export default function SurveyData() {
   const [source, setSource] = useState("total-station");
   const [points, setPoints] = useState<SurveyPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load points from DB
