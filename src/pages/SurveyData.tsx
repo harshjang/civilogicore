@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Upload, Plus, Trash2, Download, Layers, Save } from "lucide-react";
+import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import SaveToDocumentsDialog from "@/components/survey/SaveToDocumentsDialog";
 
 interface SurveyPoint {
   id: string;
@@ -27,6 +28,7 @@ export default function SurveyData() {
   const [source, setSource] = useState("total-station");
   const [points, setPoints] = useState<SurveyPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load points from DB
@@ -223,6 +225,14 @@ export default function SurveyData() {
             <Download className="w-3.5 h-3.5" />
             Export DXF
           </Button>
+          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={() => setSaveDialogOpen(true)} disabled={points.length === 0}>
+            <FileText className="w-3.5 h-3.5" />
+            Save to Docs
+          </Button>
+          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={() => { setPoints([]); toast.success("Ready for new plot entries"); }}>
+            <FilePlus className="w-3.5 h-3.5" />
+            New Plot
+          </Button>
           <Button size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={saveAll}>
             <Save className="w-3.5 h-3.5" />
             Save All
@@ -313,6 +323,16 @@ export default function SurveyData() {
           </div>
         )}
       </motion.div>
+
+      {/* Save to Documents Dialog */}
+      {user && (
+        <SaveToDocumentsDialog
+          open={saveDialogOpen}
+          onOpenChange={setSaveDialogOpen}
+          points={points}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
