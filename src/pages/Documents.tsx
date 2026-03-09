@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { FileText, Upload, Search, FolderOpen, Eye, Download, File, Trash2, ArrowLeft, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
