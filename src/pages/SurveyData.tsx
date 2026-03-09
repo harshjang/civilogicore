@@ -34,9 +34,10 @@ export default function SurveyData() {
   const [loadedDocName, setLoadedDocName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load points from DB
+  // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
-    if (!user) return;
+    const state = location.state as { csvContent?: string } | null;
+    if (!user || state?.csvContent) return;
     const load = async () => {
       const { data, error } = await supabase
         .from("survey_points")
