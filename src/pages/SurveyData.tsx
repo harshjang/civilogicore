@@ -19,11 +19,7 @@ const defaultLayers = ["Boundary", "Centerline", "Contour", "Structure", "Road",
 
 export default function SurveyData() {
   const [source, setSource] = useState("total-station");
-  const [points, setPoints] = useState<SurveyPoint[]>([
-    { id: "1", pointNo: "1", easting: "500000.000", northing: "2800000.000", elevation: "100.500", code: "BM", layer: "Boundary" },
-    { id: "2", pointNo: "2", easting: "500025.340", northing: "2800010.120", elevation: "101.200", code: "CP", layer: "Centerline" },
-    { id: "3", pointNo: "3", easting: "500050.780", northing: "2800020.450", elevation: "99.800", code: "TP", layer: "Road" },
-  ]);
+  const [points, setPoints] = useState<SurveyPoint[]>([]);
 
   const addPoint = () => {
     const newId = String(points.length + 1);

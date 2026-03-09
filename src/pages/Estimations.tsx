@@ -129,20 +129,10 @@ export default function Estimations() {
         <div className="p-4 md:p-5 border-b border-border">
           <h2 className="font-mono text-xs md:text-sm font-semibold text-foreground">RECENT ESTIMATES</h2>
         </div>
-        <div className="divide-y divide-border/50">
-          {[
-            { name: "Road Embankment - NH44", type: "Earthwork", vol: "12,500 m³", date: "Mar 7" },
-            { name: "Foundation Pad - Block A", type: "Concrete", vol: "86 m³", date: "Mar 5" },
-            { name: "Retaining Wall", type: "Brickwork", vol: "240 m²", date: "Mar 3" },
-          ].map((est) => (
-            <div key={est.name} className="px-4 md:px-5 py-3 md:py-4 flex items-center justify-between hover:bg-secondary/20 transition-colors">
-              <div>
-                <p className="text-xs md:text-sm text-foreground font-mono">{est.name}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground font-mono mt-0.5">{est.type} · {est.date}</p>
-              </div>
-              <span className="font-mono text-xs md:text-sm font-semibold text-primary">{est.vol}</span>
-            </div>
-          ))}
+        <div className="p-8 md:p-12 flex flex-col items-center justify-center text-center">
+          <Calculator className="w-10 h-10 text-muted-foreground/40 mb-3" />
+          <p className="font-mono text-sm text-muted-foreground">No estimates saved yet</p>
+          <p className="font-mono text-xs text-muted-foreground/60 mt-1">Run a calculation to see it here</p>
         </div>
       </motion.div>
     </div>

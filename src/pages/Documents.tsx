@@ -3,14 +3,7 @@ import { FileText, Upload, Search, FolderOpen, Eye, Download, File } from "lucid
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const documents = [
-  { name: "Highway_Bridge_Plan.dwg", type: "DWG", size: "4.2 MB", date: "2026-03-07", status: "Approved" },
-  { name: "Soil_Investigation_Report.pdf", type: "PDF", size: "12.8 MB", date: "2026-03-05", status: "In Review" },
-  { name: "Structural_Analysis_v3.xlsx", type: "XLSX", size: "1.1 MB", date: "2026-03-04", status: "Draft" },
-  { name: "Site_Survey_Points.csv", type: "CSV", size: "256 KB", date: "2026-03-03", status: "Approved" },
-  { name: "Concrete_Mix_Design.pdf", type: "PDF", size: "3.4 MB", date: "2026-03-01", status: "Approved" },
-  { name: "Drainage_Layout.dwg", type: "DWG", size: "8.7 MB", date: "2026-02-28", status: "In Review" },
-];
+const documents: { name: string; type: string; size: string; date: string; status: string }[] = [];
 
 const statusColors: Record<string, string> = {
   Approved: "text-survey-green bg-survey-green/10",
