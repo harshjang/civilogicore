@@ -227,7 +227,10 @@ export default function SurveyData() {
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl md:text-2xl font-mono font-bold text-foreground">Survey Data</h1>
-        <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT</p>
+        <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">
+          COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
+          {loadedDocName && <span className="text-primary ml-2">· Loaded: {loadedDocName}</span>}
+        </p>
       </motion.div>
 
       {/* Source & Controls */}
