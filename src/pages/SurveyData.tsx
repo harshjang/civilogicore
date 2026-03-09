@@ -26,10 +26,12 @@ const defaultLayers = ["Boundary", "Centerline", "Contour", "Structure", "Road",
 
 export default function SurveyData() {
   const { user } = useAuth();
+  const location = useLocation();
   const [source, setSource] = useState("total-station");
   const [points, setPoints] = useState<SurveyPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [loadedDocName, setLoadedDocName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load points from DB
