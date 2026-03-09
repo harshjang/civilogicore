@@ -323,6 +323,16 @@ export default function SurveyData() {
           </div>
         )}
       </motion.div>
+
+      {/* Save to Documents Dialog */}
+      {user && (
+        <SaveToDocumentsDialog
+          open={saveDialogOpen}
+          onOpenChange={setSaveDialogOpen}
+          points={points}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
