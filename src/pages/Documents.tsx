@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FileText, Upload, Search, FolderOpen, Eye, Download, File, Trash2, ArrowLeft, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ function formatSize(bytes: number) {
 
 export default function Documents() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,6 +145,14 @@ export default function Documents() {
     setFolderPath([...folderPath, { id: folder.id, name: folder.name }]);
   };
 
+  const openCsvInSurvey = async (doc: DocRecord) => {
+    if (!doc.storage_path) return;
+    const { data, error } = await supabase.storage.from("user-documents").download(doc.storage_path);
+    if (error || !data) { toast.error("Failed to open CSV"); return; }
+    const text = await data.text();
+    navigate("/survey", { state: { csvContent: text, docId: doc.id, docName: doc.name } });
+  };
+
   const goToFolder = (idx: number) => {
     const target = folderPath[idx];
     setCurrentFolder(target.id);
@@ -226,7 +236,7 @@ export default function Documents() {
         ) : (
           <div className="divide-y divide-border/50">
             {filtered.map((doc) => (
-              <div key={doc.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20 transition-colors">
+              <div key={doc.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20 transition-colors cursor-pointer" onDoubleClick={() => { if (doc.type === 'file' && doc.file_type === 'CSV') openCsvInSurvey(doc); }}>
                 {doc.type === "folder" ? (
                   <FolderOpen className="w-5 h-5 text-primary shrink-0" />
                 ) : (

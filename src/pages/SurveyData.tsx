@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,12 @@ const defaultLayers = ["Boundary", "Centerline", "Contour", "Structure", "Road",
 
 export default function SurveyData() {
   const { user } = useAuth();
+  const location = useLocation();
   const [source, setSource] = useState("total-station");
   const [points, setPoints] = useState<SurveyPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [loadedDocName, setLoadedDocName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load points from DB
@@ -61,6 +64,40 @@ export default function SurveyData() {
     load();
   }, [user]);
 
+  // Load CSV from Documents navigation
+  useEffect(() => {
+    const state = location.state as { csvContent?: string; docName?: string } | null;
+    if (!state?.csvContent) return;
+
+    const lines = state.csvContent.trim().split("\n");
+    const parsed: SurveyPoint[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const cols = lines[i].split(",").map((c) => c.trim());
+      if (cols.length < 3) continue;
+      if (i === 0 && isNaN(parseFloat(cols[0])) && isNaN(parseFloat(cols[1]))) continue;
+
+      parsed.push({
+        id: crypto.randomUUID(),
+        pointNo: cols[0] || String(parsed.length + 1),
+        easting: cols[1] || "0",
+        northing: cols[2] || "0",
+        elevation: cols[3] || "0",
+        code: cols[4] || "",
+        layer: cols[5] || "Boundary",
+        isNew: true,
+      });
+    }
+
+    if (parsed.length > 0) {
+      setPoints(parsed);
+      setLoadedDocName(state.docName || null);
+      setLoading(false);
+      toast.success(`Loaded ${parsed.length} points from ${state.docName || "CSV"}`);
+    }
+    // Clear state to prevent re-loading on re-render
+    window.history.replaceState({}, document.title);
+  }, [location.state]);
   const addPoint = () => {
     const newId = crypto.randomUUID();
     const no = String(points.length + 1);
@@ -190,7 +227,10 @@ export default function SurveyData() {
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-xl md:text-2xl font-mono font-bold text-foreground">Survey Data</h1>
-        <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT</p>
+        <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">
+          COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
+          {loadedDocName && <span className="text-primary ml-2">· Loaded: {loadedDocName}</span>}
+        </p>
       </motion.div>
 
       {/* Source & Controls */}
