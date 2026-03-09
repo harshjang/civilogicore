@@ -225,6 +225,14 @@ export default function SurveyData() {
             <Download className="w-3.5 h-3.5" />
             Export DXF
           </Button>
+          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={() => setSaveDialogOpen(true)} disabled={points.length === 0}>
+            <FileText className="w-3.5 h-3.5" />
+            Save to Docs
+          </Button>
+          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={() => { setPoints([]); toast.success("Ready for new plot entries"); }}>
+            <FilePlus className="w-3.5 h-3.5" />
+            New Plot
+          </Button>
           <Button size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={saveAll}>
             <Save className="w-3.5 h-3.5" />
             Save All
