@@ -236,7 +236,7 @@ export default function Documents() {
         ) : (
           <div className="divide-y divide-border/50">
             {filtered.map((doc) => (
-              <div key={doc.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20 transition-colors">
+              <div key={doc.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20 transition-colors cursor-pointer" onDoubleClick={() => { if (doc.type === 'file' && doc.file_type === 'CSV') openCsvInSurvey(doc); }}>
                 {doc.type === "folder" ? (
                   <FolderOpen className="w-5 h-5 text-primary shrink-0" />
                 ) : (
