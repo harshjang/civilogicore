@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { FileText, Upload, Search, FolderOpen, Eye, Download, File, Trash2, ArrowLeft, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -253,6 +255,20 @@ export default function Documents() {
                   <div className="flex items-center gap-2 mt-0.5">
                     {doc.file_type && (
                       <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono text-secondary-foreground">{doc.file_type}</span>
+                    )}
+                    {doc.type === "file" && doc.file_type === "CSV" && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-mono border-primary/40 text-primary cursor-help">
+                              Double-click to open
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Double-click to open in Survey Data</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     <span className="text-[10px] font-mono text-muted-foreground">{formatSize(doc.file_size)}</span>
                     <span className="text-[10px] font-mono text-muted-foreground">
