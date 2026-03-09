@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function Estimations() {
   const [calcType, setCalcType] = useState("earthwork");
-  const [length, setLength] = useState("100");
-  const [width, setWidth] = useState("10");
-  const [depth, setDepth] = useState("2");
+  const [length, setLength] = useState("");
+  const [width, setWidth] = useState("");
+  const [depth, setDepth] = useState("");
 
   const volume = (parseFloat(length) || 0) * (parseFloat(width) || 0) * (parseFloat(depth) || 0);
 
