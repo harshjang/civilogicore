@@ -145,6 +145,14 @@ export default function Documents() {
     setFolderPath([...folderPath, { id: folder.id, name: folder.name }]);
   };
 
+  const openCsvInSurvey = async (doc: DocRecord) => {
+    if (!doc.storage_path) return;
+    const { data, error } = await supabase.storage.from("user-documents").download(doc.storage_path);
+    if (error || !data) { toast.error("Failed to open CSV"); return; }
+    const text = await data.text();
+    navigate("/survey", { state: { csvContent: text, docId: doc.id, docName: doc.name } });
+  };
+
   const goToFolder = (idx: number) => {
     const target = folderPath[idx];
     setCurrentFolder(target.id);
