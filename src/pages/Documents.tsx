@@ -42,6 +42,7 @@ function formatSize(bytes: number) {
 
 export default function Documents() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
