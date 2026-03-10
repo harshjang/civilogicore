@@ -23,6 +23,7 @@ interface SurveyPoint {
 }
 
 const defaultLayers = ["Boundary", "Centerline", "Contour", "Structure", "Road", "Drainage", "Utility"];
+const defaultCodes = ["BM", "CP", "TP", "IP", "MH", "LP", "EP", "FH", "PP", "WV", "SV", "GND", "TBM", "PEG", "TREE", "BLDG", "FENCE", "WALL", "CURB", "INV"];
 
 export default function SurveyData() {
   const { user } = useAuth();
