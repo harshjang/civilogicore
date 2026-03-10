@@ -9,6 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SaveToDocumentsDialog from "@/components/survey/SaveToDocumentsDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SurveyPoint {
   id: string;
@@ -271,19 +282,35 @@ export default function SurveyData() {
             <FileText className="w-3.5 h-3.5" />
             Save to Docs
           </Button>
-          <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={async () => {
-              if (!user) return;
-              const dbPoints = points.filter(p => !p.isNew);
-              if (dbPoints.length > 0) {
-                const { error } = await supabase.from("survey_points").delete().eq("user_id", user.id);
-                if (error) { toast.error("Failed to clear points"); console.error(error); return; }
-              }
-              setPoints([]);
-              toast.success("Ready for new plot entries");
-            }}>
-            <FilePlus className="w-3.5 h-3.5" />
-            New Plot
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial">
+                <FilePlus className="w-3.5 h-3.5" />
+                New Plot
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Start New Plot?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all current survey points. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={async () => {
+                  if (!user) return;
+                  const dbPoints = points.filter(p => !p.isNew);
+                  if (dbPoints.length > 0) {
+                    const { error } = await supabase.from("survey_points").delete().eq("user_id", user.id);
+                    if (error) { toast.error("Failed to clear points"); console.error(error); return; }
+                  }
+                  setPoints([]);
+                  toast.success("Ready for new plot entries");
+                }}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </motion.div>
 
