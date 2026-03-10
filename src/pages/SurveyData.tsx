@@ -335,7 +335,16 @@ export default function SurveyData() {
                       <Input value={pt.elevation} onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)} className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                     </td>
                     <td className="px-3 md:px-4 py-2">
-                      <Input value={pt.code} onChange={(e) => updatePoint(pt.id, "code", e.target.value)} className="w-16 md:w-20 h-8 font-mono text-xs bg-secondary border-border" placeholder="Code" />
+                      <Select value={pt.code || undefined} onValueChange={(v) => updatePoint(pt.id, "code", v)}>
+                        <SelectTrigger className="w-20 md:w-24 h-8 font-mono text-xs bg-secondary border-border">
+                          <SelectValue placeholder="Code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {defaultCodes.map((c) => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="px-3 md:px-4 py-2">
                       <Select value={pt.layer} onValueChange={(v) => updatePoint(pt.id, "layer", v)}>

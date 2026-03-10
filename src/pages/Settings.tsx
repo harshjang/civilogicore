@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Settings as SettingsIcon, User, Bell, Shield, Palette } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,24 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
+
+  const getInitialTheme = () => {
+    const stored = localStorage.getItem("theme");
+    if (stored === "light") return false;
+    return true; // default dark
+  };
+  const [darkMode, setDarkMode] = useState(getInitialTheme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (darkMode) {
+      root.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.add("light");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
