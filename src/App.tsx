@@ -14,6 +14,7 @@ import SurveyData from "./pages/SurveyData";
 import Chat from "./pages/Chat";
 import Documents from "./pages/Documents";
 import Estimations from "./pages/Estimations";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/estimations" element={<Estimations />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
