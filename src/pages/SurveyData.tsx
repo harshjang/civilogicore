@@ -274,10 +274,6 @@ export default function SurveyData() {
             <FilePlus className="w-3.5 h-3.5" />
             New Plot
           </Button>
-          <Button size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={saveAll}>
-            <Save className="w-3.5 h-3.5" />
-            Save All
-          </Button>
         </div>
       </motion.div>
 
