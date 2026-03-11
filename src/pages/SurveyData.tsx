@@ -209,31 +209,118 @@ export default function SurveyData() {
   };
 
   // Export DXF
-  const exportDXF = () => {
-    if (points.length === 0) { toast.error("No points to export"); return; }
+const exportDXF = () => {
+  if (points.length === 0) {
+    toast.error("No points to export");
+    return;
+  }
 
-    let dxf = "0\nSECTION\n2\nENTITIES\n";
+  const labelOffset = 1.0;
+
+  let dxf = "";
+
+  // DXF HEADER
+  dxf += "0\nSECTION\n2\nHEADER\n0\nENDSEC\n";
+
+  // LAYER TABLE
+  dxf += "0\nSECTION\n2\nTABLES\n";
+  dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+
+  const uniqueLayers = Array.from(new Set(points.map(p => p.layer)));
+
+  for (const layer of uniqueLayers) {
+    dxf += `0
+LAYER
+2
+${layer}
+70
+0
+62
+7
+6
+CONTINUOUS
+`;
+  }
+
+  dxf += "0\nENDTAB\n0\nENDSEC\n";
+
+  // ENTITIES SECTION
+  dxf += "0\nSECTION\n2\nENTITIES\n";
+
+  for (const pt of points) {
+    const x = parseFloat(pt.easting) || 0;
+    const y = parseFloat(pt.northing) || 0;
+    const z = parseFloat(pt.elevation) || 0;
+
+    // POINT ENTITY
+    dxf += `0
+POINT
+8
+${pt.layer}
+10
+${x}
+20
+${y}
+30
+${z}
+`;
+
+    // TEXT LABEL
+    dxf += `0
+TEXT
+8
+${pt.layer}
+10
+${x + labelOffset}
+20
+${y + labelOffset}
+30
+${z}
+40
+0.5
+1
+${pt.pointNo}
+`;
+  }
+
+  // BOUNDARY POLYLINE (connects points)
+  if (points.length > 1) {
+    dxf += `0
+LWPOLYLINE
+8
+Boundary
+90
+${points.length}
+70
+1
+`;
+
     for (const pt of points) {
       const x = parseFloat(pt.easting) || 0;
       const y = parseFloat(pt.northing) || 0;
-      const z = parseFloat(pt.elevation) || 0;
-      // POINT entity
-      dxf += `0\nPOINT\n8\n${pt.layer}\n10\n${x}\n20\n${y}\n30\n${z}\n`;
-      // TEXT entity for label
-      dxf += `0\nTEXT\n8\n${pt.layer}\n10\n${x + 0.5}\n20\n${y + 0.5}\n30\n${z}\n40\n0.5\n1\n${pt.pointNo}\n`;
+
+      dxf += `10
+${x}
+20
+${y}
+`;
     }
-    dxf += "0\nENDSEC\n0\nEOF\n";
+  }
 
-    const blob = new Blob([dxf], { type: "application/dxf" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "survey_export.dxf";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("DXF file exported!");
-  };
+  dxf += "0\nENDSEC\n0\nEOF\n";
 
+  const blob = new Blob([dxf], { type: "application/dxf" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "survey_export.dxf";
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  toast.success("DXF file exported!");
+};
   return (
     <div className="p-4 md:p-8 space-y-6 pt-14 md:pt-8">
       <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
