@@ -139,7 +139,7 @@ useEffect(() => {
 
   if (!liveMode) return;
 
-  const ws = new WebSocket("ws://localhost:8080");
+  const ws = new WebSocket("wss://civilogicore.railway.internal");
 
   ws.onopen = () => {
     console.log("Connected to Total Station server");

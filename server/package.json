@@ -1,0 +1,11 @@
+{
+  "name": "civilogicore-survey-server",
+  "version": "1.0.0",
+  "main": "surveyServer.js",
+  "scripts": {
+    "start": "node surveyServer.js"
+  },
+  "dependencies": {
+    "ws": "^8.15.0"
+  }
+}
