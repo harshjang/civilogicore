@@ -1,3 +1,7 @@
+import { orderPoints } from "@/lib/survey/orderPoints";
+import { generateRoadProfile } from "@/lib/survey/generateRoadProfile";
+import RoadProfileChart from "@/components/survey/RoadProfileChart";
+import TerrainViewer from "@/components/survey/TerrainViewer";
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { polygonArea } from "@/lib/survey/calcArea";
 
 interface SurveyPoint {
   id: string;
@@ -41,10 +46,17 @@ export default function SurveyData() {
   const location = useLocation();
   const [source, setSource] = useState("total-station");
   const [points, setPoints] = useState<SurveyPoint[]>([]);
+  const [profile,setProfile] = useState<any[]>([]);
+  const [editPlots,setEditPlots] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [earthwork, setEarthwork] = useState<{cut:number,fill:number,net:number} | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [loadedDocName, setLoadedDocName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [estimate,setEstimate]=useState<any>(null);
+  const [simulation,setSimulation] = useState(false);
+  const [twinStatus,setTwinStatus] = useState<any>(null);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -111,6 +123,61 @@ export default function SurveyData() {
     // Clear state to prevent re-loading on re-render
     window.history.replaceState({}, document.title);
   }, [location.state]);
+
+  useEffect(()=>{
+
+ if(points.length < 2) return
+
+ const prof = generateRoadProfile(points)
+
+ setProfile(prof)
+
+},[points])
+
+  // Live Total Station Listener
+useEffect(() => {
+
+  if (!liveMode) return;
+
+  const ws = new WebSocket("ws://localhost:8080");
+
+  ws.onopen = () => {
+    console.log("Connected to Total Station server");
+  };
+
+  ws.onmessage = (msg) => {
+
+    const data = msg.data.split(",");
+
+    if (data.length < 3) return;
+
+    const newPoint: SurveyPoint = {
+      id: crypto.randomUUID(),
+      pointNo: data[0] || String(points.length + 1),
+      easting: data[1] || "0",
+      northing: data[2] || "0",
+      elevation: data[3] || "0",
+      code: "",
+      layer: "Boundary",
+      isNew: true
+    };
+
+    setPoints(prev => [...prev, newPoint]);
+
+    toast.success("Live point received from Total Station");
+
+  };
+
+  ws.onerror = () => {
+    console.log("Total Station connection error");
+  };
+
+  return () => {
+    ws.close();
+  };
+
+}, []);
+
   const addPoint = () => {
     const newId = crypto.randomUUID();
     const no = String(points.length + 1);
@@ -170,6 +237,44 @@ export default function SurveyData() {
     toast.success("All points saved!");
   };
 
+  <div className="flex gap-2 w-full sm:w-auto sm:ml-auto flex-wrap">
+
+  <Button
+    variant={liveMode ? "default" : "outline"}
+    size="sm"
+    className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
+    onClick={() => setLiveMode(!liveMode)}
+  >
+  <MapPin className="w-3.5 h-3.5" />
+  {liveMode ? "Live ON" : "Live OFF"}
+  </Button>
+
+  <Button
+ size="sm"
+ variant={editPlots ? "default":"outline"}
+ onClick={()=>setEditPlots(!editPlots)}
+>
+ Edit Plots
+</Button>
+
+<Button
+ size="sm"
+ variant="outline"
+ onClick={()=>setEditPlots(false)}
+>
+ AI Plan
+</Button>
+
+<Button
+ size="sm"
+ variant={simulation ? "default":"outline"}
+ onClick={()=>setSimulation(!simulation)}
+>
+ 4D Simulation
+</Button>
+
+  </div>
+
   // Import CSV
   const handleImportCSV = () => fileInputRef.current?.click();
 
@@ -208,7 +313,18 @@ export default function SurveyData() {
     e.target.value = "";
   };
 
+  useEffect(() => {
+
+ if(points.length < 3) return
+
+ const area = polygonArea(points)
+
+ toast.success(`Area = ${area.toFixed(2)} sq.m`)
+
+},[points])
+
   // Export DXF
+  const contourInterval = 1; // meters
 const exportDXF = () => {
   if (points.length === 0) {
     toast.error("No points to export");
@@ -226,21 +342,37 @@ const exportDXF = () => {
   dxf += "0\nSECTION\n2\nTABLES\n";
   dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
 
+  // Layer color mapping (AutoCAD color index)
+  const layerColors: Record<string, number> = {
+    Boundary: 1,    // red
+    Centerline: 2,  // yellow
+    Contour: 3,     // green
+    Structure: 4,   // cyan
+    Road: 5,        // blue
+    Drainage: 6,    // magenta
+    Utility: 140    // orange
+  };
+
   const uniqueLayers = Array.from(new Set(points.map(p => p.layer)));
 
   for (const layer of uniqueLayers) {
-    dxf += `0
+
+  const color = layerColors[layer] || 7; // default white
+
+  dxf += `
+0
 LAYER
 2
 ${layer}
 70
 0
 62
-7
+${color}
 6
 CONTINUOUS
 `;
-  }
+
+}
 
   dxf += "0\nENDTAB\n0\nENDSEC\n";
 
@@ -253,7 +385,8 @@ CONTINUOUS
     const z = parseFloat(pt.elevation) || 0;
 
     // POINT ENTITY
-    dxf += `0
+dxf += `
+0
 POINT
 8
 ${pt.layer}
@@ -264,6 +397,126 @@ ${y}
 30
 ${z}
 `;
+
+// SYMBOL BASED ON CODE
+const code = pt.code?.toUpperCase();
+
+if (code === "MH") {
+
+  // Manhole → circle
+  dxf += `
+0
+CIRCLE
+8
+${pt.layer}
+10
+${x}
+20
+${y}
+30
+${z}
+40
+0.7
+`;
+
+}
+
+else if (code === "TREE") {
+
+  // Tree → bigger circle
+  dxf += `
+0
+CIRCLE
+8
+${pt.layer}
+10
+${x}
+20
+${y}
+30
+${z}
+40
+1.0
+`;
+
+}
+
+else if (code === "LP" || code === "POLE") {
+
+  // Pole → cross
+  dxf += `
+0
+LINE
+8
+${pt.layer}
+10
+${x - 0.5}
+20
+${y - 0.5}
+30
+${z}
+11
+${x + 0.5}
+21
+${y + 0.5}
+31
+${z}
+`;
+
+  dxf += `
+0
+LINE
+8
+${pt.layer}
+10
+${x - 0.5}
+20
+${y + 0.5}
+30
+${z}
+11
+${x + 0.5}
+21
+${y - 0.5}
+31
+${z}
+`;
+
+}
+
+else if (code === "BM" || code === "CP") {
+
+  // Benchmark → square
+  const s = 0.6;
+
+  dxf += `
+0
+LWPOLYLINE
+8
+${pt.layer}
+90
+4
+70
+1
+10
+${x - s}
+20
+${y - s}
+10
+${x + s}
+20
+${y - s}
+10
+${x + s}
+20
+${y + s}
+10
+${x - s}
+20
+${y + s}
+`;
+
+}
 
     // TEXT LABEL
     dxf += `0
@@ -294,8 +547,8 @@ ${points.length}
 70
 1
 `;
-
-    for (const pt of points) {
+    const ordered = orderPoints(points);
+    for (const pt of ordered) {
       const x = parseFloat(pt.easting) || 0;
       const y = parseFloat(pt.northing) || 0;
 
@@ -306,6 +559,97 @@ ${y}
 `;
     }
   }
+
+  const elevations = points.map(p => parseFloat(p.elevation) || 0);
+
+const minZ = Math.min(...elevations);
+const maxZ = Math.max(...elevations);
+
+  const contourLevels = [];
+
+for (
+  let z = Math.ceil(minZ / contourInterval) * contourInterval;
+  z <= maxZ;
+  z += contourInterval
+) {
+  contourLevels.push(z);
+}
+
+  for (const level of contourLevels) {
+
+  const contourPoints = [];
+
+  for (let i = 0; i < points.length - 1; i++) {
+
+    const p1 = points[i];
+    const p2 = points[i + 1];
+
+    const z1 = parseFloat(p1.elevation) || 0;
+    const z2 = parseFloat(p2.elevation) || 0;
+
+    if ((z1 <= level && z2 >= level) || (z2 <= level && z1 >= level)) {
+
+      const x1 = parseFloat(p1.easting);
+      const y1 = parseFloat(p1.northing);
+
+      const x2 = parseFloat(p2.easting);
+      const y2 = parseFloat(p2.northing);
+
+      const t = (level - z1) / (z2 - z1);
+
+      const x = x1 + t * (x2 - x1);
+      const y = y1 + t * (y2 - y1);
+
+      contourPoints.push({ x, y });
+    }
+  }
+
+  if (contourPoints.length >= 2) {
+
+    dxf += `
+0
+LWPOLYLINE
+8
+Contour
+90
+${contourPoints.length}
+`;
+
+    for (const pt of contourPoints) {
+      dxf += `
+10
+${pt.x}
+20
+${pt.y}
+`;
+    }
+
+  }
+
+  // Add contour label
+if (contourPoints.length > 0) {
+
+  const mid = contourPoints[Math.floor(contourPoints.length / 2)];
+
+  dxf += `
+0
+TEXT
+8
+Contour
+10
+${mid.x}
+20
+${mid.y}
+30
+0
+40
+1
+1
+${level}
+`;
+}
+
+}
 
   dxf += "0\nENDSEC\n0\nEOF\n";
 
@@ -493,6 +837,117 @@ ${y}
           </div>
         )}
       </motion.div>
+
+      {/* Terrain Viewer */}
+{points.length > 2 && (
+  <div className="bg-card rounded-lg border border-border p-4 md:p-5">
+    <h2 className="font-mono text-sm font-semibold mb-3">
+      3D Terrain Preview
+    </h2>
+
+    <TerrainViewer
+ points={points}
+ setEarthwork={setEarthwork}
+ editPlots={editPlots}
+ setEstimate={setEstimate}
+ simulation={simulation}
+ setTwinStatus={setTwinStatus}
+/>
+  </div>
+)}
+
+  {earthwork && (
+  <div className="bg-card rounded-lg border border-border p-4 md:p-5">
+    <h2 className="font-mono text-sm font-semibold mb-3">
+      Earthwork Volume
+    </h2>
+
+    <p className="font-mono text-xs">
+      Cut: {earthwork.cut.toFixed(2)} m³
+    </p>
+
+    <p className="font-mono text-xs">
+      Fill: {earthwork.fill.toFixed(2)} m³
+    </p>
+
+    <p className="font-mono text-xs">
+      Net: {earthwork.net.toFixed(2)} m³
+    </p>
+  </div>
+)}
+
+      {profile.length>0 && (
+
+ <div className="bg-card border border-border rounded-lg p-4 md:p-5">
+
+  <h2 className="font-mono text-sm font-semibold mb-3">
+   Road Profile
+  </h2>
+
+  <RoadProfileChart profile={profile}/>
+
+ </div>
+
+)}
+
+{estimate && (
+
+ <div className="bg-card border border-border rounded-lg p-4 md:p-5">
+
+  <h2 className="font-mono text-sm font-semibold mb-3">
+   AI Construction Estimate
+  </h2>
+
+  <p className="font-mono text-xs">
+   Road Length: {estimate.roadLength.toFixed(2)} m
+  </p>
+
+  <p className="font-mono text-xs">
+   Building Area: {estimate.buildingArea.toFixed(2)} m²
+  </p>
+
+  <p className="font-mono text-xs">
+   Water Line: {estimate.waterLength.toFixed(2)} m
+  </p>
+
+  <p className="font-mono text-xs">
+   Sewer Line: {estimate.sewerLength.toFixed(2)} m
+  </p>
+
+  <p className="font-mono text-xs">
+   Estimated Cost: ${estimate.totalCost.toFixed(2)}
+  </p>
+
+ </div>
+
+)}
+{twinStatus && (
+
+ <div className="bg-card border border-border rounded-lg p-4 md:p-5">
+
+  <h2 className="font-mono text-sm font-semibold mb-3">
+   Digital Twin Monitoring
+  </h2>
+
+  <p className="font-mono text-xs">
+   Planned Elements: {twinStatus.plannedProgress}
+  </p>
+
+  <p className="font-mono text-xs">
+   Completed Elements: {twinStatus.actualProgress}
+  </p>
+
+  <p className="font-mono text-xs">
+   Delay: {twinStatus.delay}
+  </p>
+
+  <p className="font-mono text-xs">
+   Status: {twinStatus.status}
+  </p>
+
+ </div>
+
+)}
 
       {/* Save to Documents Dialog */}
       {user && (
