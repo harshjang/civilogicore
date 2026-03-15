@@ -1,3 +1,8 @@
+import WorkspaceSidebar from "@/components/ui/WorkspaceSidebar";
+import { generateAlignment } from "@/lib/road/alignment";
+import { generateVerticalProfile } from "@/lib/road/verticalProfile";
+import { generateCrossSections } from "@/lib/road/crossSection";
+import { generateCorridor } from "@/lib/road/corridor";
 import { orderPoints } from "@/lib/survey/orderPoints";
 import { generateRoadProfile } from "@/lib/survey/generateRoadProfile";
 import RoadProfileChart from "@/components/survey/RoadProfileChart";
@@ -57,6 +62,8 @@ export default function SurveyData() {
   const [estimate,setEstimate]=useState<any>(null);
   const [simulation,setSimulation] = useState(false);
   const [twinStatus,setTwinStatus] = useState<any>(null);
+  const [activeTool,setActiveTool] = useState("survey");
+const [advancedMode,setAdvancedMode] = useState(false);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -628,6 +635,14 @@ ${level}
   toast.success("DXF file exported!");
 };
   return (
+
+    <div className="flex">
+
+    <WorkspaceSidebar
+    activeTool={activeTool}
+    setActiveTool={setActiveTool}
+    />
+
     <div className="p-4 md:p-8 space-y-6 pt-14 md:pt-8">
       <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
 
@@ -704,25 +719,24 @@ ${level}
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
-          <Button
-            variant={liveMode ? "default" : "outline"}
-            size="sm"
-            className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
-            onClick={() => setLiveMode(!liveMode)}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            {liveMode ? "Live ON" : "Live OFF"}
-          </Button>
 
           <Button
-            size="sm"
-            variant={editPlots ? "default" : "outline"}
-            className="font-mono text-xs flex-1 sm:flex-initial"
-            onClick={() => setEditPlots(!editPlots)}
-          >
-            Edit Plots
-          </Button>
+    variant={liveMode ? "default" : "outline"}
+    size="sm"
+    className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
+    onClick={() => setLiveMode(!liveMode)}
+  >
+  <MapPin className="w-3.5 h-3.5" />
+  {liveMode ? "Live ON" : "Live OFF"}
+  </Button>
+
+  <Button
+ size="sm"
+ variant={editPlots ? "default":"outline"}
+ onClick={()=>setEditPlots(!editPlots)}
+>
+ Edit Plots
+</Button>
 
           <Button
             size="sm"
@@ -733,17 +747,49 @@ ${level}
             AI Plan
           </Button>
 
-          <Button
-            size="sm"
-            variant={simulation ? "default" : "outline"}
-            className="font-mono text-xs flex-1 sm:flex-initial"
-            onClick={() => setSimulation(!simulation)}
-          >
-            4D Simulation
-          </Button>
+<Button
+ size="sm"
+ variant={simulation ? "default":"outline"}
+ onClick={()=>setSimulation(!simulation)}
+>
+ 4D Simulation
+</Button>
 
         </div>
       </motion.div>
+
+      {activeTool==="road" && (
+
+<div className="flex gap-2 mt-2 flex-wrap">
+
+<Button size="sm" variant="outline"
+onClick={()=>console.log(generateAlignment(points))}
+>
+Generate Alignment
+</Button>
+
+<Button size="sm" variant="outline"
+onClick={()=>console.log(generateCrossSections(points))}
+>
+Cross Sections
+</Button>
+
+<Button size="sm" variant="outline"
+onClick={()=>console.log(generateVerticalProfile(points))}
+>
+Vertical Profile
+</Button>
+
+<Button size="sm" variant="outline"
+onClick={()=>console.log(generateCorridor(generateCrossSections(points)))}
+>
+Create Corridor
+</Button>
+
+</div>
+
+)}
+
 
       {/* Data Table */}
       <motion.div
@@ -958,6 +1004,7 @@ ${level}
           userId={user.id}
         />
       )}
+    </div>
     </div>
   );
 }
