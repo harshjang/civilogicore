@@ -237,44 +237,6 @@ useEffect(() => {
     toast.success("All points saved!");
   };
 
-  <div className="flex gap-2 w-full sm:w-auto sm:ml-auto flex-wrap">
-
-  <Button
-    variant={liveMode ? "default" : "outline"}
-    size="sm"
-    className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
-    onClick={() => setLiveMode(!liveMode)}
-  >
-  <MapPin className="w-3.5 h-3.5" />
-  {liveMode ? "Live ON" : "Live OFF"}
-  </Button>
-
-  <Button
- size="sm"
- variant={editPlots ? "default":"outline"}
- onClick={()=>setEditPlots(!editPlots)}
->
- Edit Plots
-</Button>
-
-<Button
- size="sm"
- variant="outline"
- onClick={()=>setEditPlots(false)}
->
- AI Plan
-</Button>
-
-<Button
- size="sm"
- variant={simulation ? "default":"outline"}
- onClick={()=>setSimulation(!simulation)}
->
- 4D Simulation
-</Button>
-
-  </div>
-
   // Import CSV
   const handleImportCSV = () => fileInputRef.current?.click();
 
@@ -742,6 +704,41 @@ ${level}
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          
+          <Button
+    variant={liveMode ? "default" : "outline"}
+    size="sm"
+    className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
+    onClick={() => setLiveMode(!liveMode)}
+  >
+  <MapPin className="w-3.5 h-3.5" />
+  {liveMode ? "Live ON" : "Live OFF"}
+  </Button>
+
+  <Button
+ size="sm"
+ variant={editPlots ? "default":"outline"}
+ onClick={()=>setEditPlots(!editPlots)}
+>
+ Edit Plots
+</Button>
+
+<Button
+ size="sm"
+ variant="outline"
+ onClick={()=>setEditPlots(false)}
+>
+ AI Plan
+</Button>
+
+<Button
+ size="sm"
+ variant={simulation ? "default":"outline"}
+ onClick={()=>setSimulation(!simulation)}
+>
+ 4D Simulation
+</Button>
+
         </div>
       </motion.div>
 
