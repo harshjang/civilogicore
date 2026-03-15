@@ -31,6 +31,9 @@ interface Point {
 
 export default function TerrainViewer({
   points,
+  alignment,
+  sections,
+  corridor,
   setEarthwork,
   editPlots,
   setEstimate,
@@ -38,6 +41,9 @@ export default function TerrainViewer({
   setTwinStatus
 }: {
   points: Point[];
+  alignment:any[];
+  sections:any[];
+  corridor:any[];
   setEarthwork: any;
   editPlots: boolean;
   setEstimate: any;
@@ -338,6 +344,21 @@ contours.forEach(contour => {
 
       scene.add(line);
     });
+
+    alignment?.forEach(seg => {
+
+ const geometry = new THREE.BufferGeometry().setFromPoints([
+   new THREE.Vector3(seg.start.x,seg.start.y,seg.start.z),
+   new THREE.Vector3(seg.end.x,seg.end.y,seg.end.z)
+ ])
+
+ const material = new THREE.LineBasicMaterial({color:0xff0000})
+
+ const line = new THREE.Line(geometry,material)
+
+ scene.add(line)
+
+})
 
     // Utilities
     const utilities = generateUtilities([], plots);

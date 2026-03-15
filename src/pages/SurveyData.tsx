@@ -63,7 +63,10 @@ export default function SurveyData() {
   const [simulation,setSimulation] = useState(false);
   const [twinStatus,setTwinStatus] = useState<any>(null);
   const [activeTool,setActiveTool] = useState("survey");
-const [advancedMode,setAdvancedMode] = useState(false);
+  const [advancedMode,setAdvancedMode] = useState(false);
+  const [alignment,setAlignment] = useState<any[]>([]);
+  const [sections,setSections] = useState<any[]>([]);
+  const [corridor,setCorridor] = useState<any[]>([]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -762,26 +765,47 @@ ${level}
 
 <div className="flex gap-2 mt-2 flex-wrap">
 
-<Button size="sm" variant="outline"
-onClick={()=>console.log(generateAlignment(points))}
+<Button
+size="sm"
+variant="outline"
+onClick={()=>{
+ const a = generateAlignment(points)
+ setAlignment(a)
+}}
 >
 Generate Alignment
 </Button>
 
-<Button size="sm" variant="outline"
-onClick={()=>console.log(generateCrossSections(points))}
+<Button
+size="sm"
+variant="outline"
+onClick={()=>{
+ const s = generateCrossSections(points)
+ setSections(s)
+}}
 >
 Cross Sections
 </Button>
 
-<Button size="sm" variant="outline"
-onClick={()=>console.log(generateVerticalProfile(points))}
+<Button
+size="sm"
+variant="outline"
+onClick={()=>{
+ const p = generateVerticalProfile(points)
+ setProfile(p)
+}}
 >
 Vertical Profile
 </Button>
 
-<Button size="sm" variant="outline"
-onClick={()=>console.log(generateCorridor(generateCrossSections(points)))}
+<Button
+size="sm"
+variant="outline"
+onClick={()=>{
+ const s = generateCrossSections(points)
+ const c = generateCorridor(s)
+ setCorridor(c)
+}}
 >
 Create Corridor
 </Button>
@@ -893,6 +917,9 @@ Create Corridor
 
     <TerrainViewer
  points={points}
+ alignment={alignment}
+ sections={sections}
+ corridor={corridor}
  setEarthwork={setEarthwork}
  editPlots={editPlots}
  setEstimate={setEstimate}
