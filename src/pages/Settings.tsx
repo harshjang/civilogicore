@@ -51,7 +51,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto pt-14 md:pt-8">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex items-center gap-3 mb-6">
           <SettingsIcon className="w-6 h-6 text-primary" />
