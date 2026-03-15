@@ -133,7 +133,7 @@ export default function Settings() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label className="font-mono text-xs text-muted-foreground">Password</Label>
-              <Button variant="outline" size="sm" className="font-mono text-xs" onClick={() => {
+              <Button variant="outline" size="sm" className="font-mono text-xs ml-1" onClick={() => {
                 supabase.auth.resetPasswordForEmail(user?.email ?? "").then(() => {
                   toast.success("Password reset email sent");
                 });

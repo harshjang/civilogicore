@@ -706,38 +706,41 @@ ${level}
           </AlertDialog>
           
           <Button
-    variant={liveMode ? "default" : "outline"}
-    size="sm"
-    className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
-    onClick={() => setLiveMode(!liveMode)}
-  >
-  <MapPin className="w-3.5 h-3.5" />
-  {liveMode ? "Live ON" : "Live OFF"}
-  </Button>
+            variant={liveMode ? "default" : "outline"}
+            size="sm"
+            className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
+            onClick={() => setLiveMode(!liveMode)}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            {liveMode ? "Live ON" : "Live OFF"}
+          </Button>
 
-  <Button
- size="sm"
- variant={editPlots ? "default":"outline"}
- onClick={()=>setEditPlots(!editPlots)}
->
- Edit Plots
-</Button>
+          <Button
+            size="sm"
+            variant={editPlots ? "default" : "outline"}
+            className="font-mono text-xs flex-1 sm:flex-initial"
+            onClick={() => setEditPlots(!editPlots)}
+          >
+            Edit Plots
+          </Button>
 
-<Button
- size="sm"
- variant="outline"
- onClick={()=>setEditPlots(false)}
->
- AI Plan
-</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="font-mono text-xs flex-1 sm:flex-initial"
+            onClick={() => setEditPlots(false)}
+          >
+            AI Plan
+          </Button>
 
-<Button
- size="sm"
- variant={simulation ? "default":"outline"}
- onClick={()=>setSimulation(!simulation)}
->
- 4D Simulation
-</Button>
+          <Button
+            size="sm"
+            variant={simulation ? "default" : "outline"}
+            className="font-mono text-xs flex-1 sm:flex-initial"
+            onClick={() => setSimulation(!simulation)}
+          >
+            4D Simulation
+          </Button>
 
         </div>
       </motion.div>
