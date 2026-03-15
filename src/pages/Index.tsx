@@ -48,7 +48,7 @@ export default function Index() {
           {displayName ? `Welcome, ${displayName}` : "Dashboard"}
         </h1>
         <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">
-          SYSTEM STATUS · ALL MODULES OPERATIONAL
+          SYSTEM STATUS · ALL MODULES OPERATIONALS
         </p>
       </motion.div>
 
