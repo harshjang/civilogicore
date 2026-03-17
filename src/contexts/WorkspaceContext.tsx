@@ -1,23 +1,28 @@
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState } from "react";
 
-type Module =
-  | "survey"
-  | "terrain"
-  | "road"
-  | "hydrology"
-  | "utilities"
-  | "ai"
-
-const WorkspaceContext = createContext<any>(null)
+const WorkspaceContext = createContext<any>(null);
 
 export function WorkspaceProvider({ children }: any) {
-  const [activeModule, setActiveModule] = useState<Module>("survey")
+  const [activeModule, setActiveModule] = useState("survey");
+  const [activeTool, setActiveTool] = useState("");
+  const [drawMode, setDrawMode] = useState(false);
 
   return (
-    <WorkspaceContext.Provider value={{ activeModule, setActiveModule }}>
+    <WorkspaceContext.Provider
+      value={{
+        activeModule,
+        setActiveModule,
+        activeTool,
+        setActiveTool,
+        drawMode,
+        setDrawMode,
+      }}
+    >
       {children}
     </WorkspaceContext.Provider>
-  )
+  );
 }
 
-export const useWorkspace = () => useContext(WorkspaceContext)
+export function useWorkspace() {
+  return useContext(WorkspaceContext);
+}

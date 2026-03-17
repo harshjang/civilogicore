@@ -22,6 +22,7 @@ import { aiSitePlanner } from "@/lib/survey/aiSitePlanner";
 import { aiConstructionEstimator } from "@/lib/survey/aiConstructionEstimator";
 import { generateConstructionPhases } from "@/lib/survey/constructionSimulation";
 import { digitalTwinMonitor } from "@/lib/survey/digitalTwinMonitor";
+import { List } from "lucide-react";
 
 interface Point {
   easting: string;
@@ -35,6 +36,9 @@ export default function TerrainViewer({
   sections,
   corridor,
   verticalProfile,
+  drawMode,
+  setAlignment,
+  setDrawMode,
   setEarthwork,
   editPlots,
   setEstimate,
@@ -46,6 +50,9 @@ export default function TerrainViewer({
   sections:any[];
   corridor:any[];
   verticalProfile: any[];
+  drawMode: boolean;
+  setAlignment: any;
+  setDrawMode: any;
   setEarthwork: any;
   editPlots: boolean;
   setEstimate: any;
@@ -55,354 +62,241 @@ export default function TerrainViewer({
 
   const mountRef = useRef<HTMLDivElement>(null);
   const [phaseIndex, setPhaseIndex] = useState(0);
+  const [drawPoints, setDrawPoints] = useState<any[]>([]);
+  const [previewPoint, setPreviewPoint] = useState<any>(null);
 
   useEffect(() => {
 
-    if (!mountRef.current || points.length < 3) return;
+  if (!mountRef.current || points.length < 3) return;
 
-    const width = mountRef.current.clientWidth;
-    const height = 450;
+  let previewSphere: THREE.Mesh | null = null;
+  let alignmentLine: THREE.Line | null = null;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
+  const width = mountRef.current.clientWidth;
+  const height = 450;
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 1, 100000);
-    camera.position.set(0, -200, 150);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a0a);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
+  const camera = new THREE.PerspectiveCamera(60, width / height, 1, 100000);
+  camera.position.set(0, -200, 150);
 
-    mountRef.current.innerHTML = "";
-    mountRef.current.appendChild(renderer.domElement);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+  mountRef.current.innerHTML = "";
+  mountRef.current.appendChild(renderer.domElement);
 
-    const coords = points.map(p => [
-      +p.easting,
-      +p.northing
-    ]);
+  const controls = new OrbitControls(camera, renderer.domElement);
 
-    const terrainPoints = points.map(p=>({
- x:+p.easting,
- y:+p.northing,
- z:+p.elevation
-}))
+  // 🌍 TERRAIN
+  const coords = points.map(p => [+p.easting, +p.northing]);
+  const delaunay = Delaunator.from(coords);
+  const triangles = delaunay.triangles;
 
-    const flow = computeFlowDirection(terrainPoints)
+  const vertices: number[] = [];
 
-const accumulation = computeFlowAccumulation(flow)
-
-const streams = extractDrainage(
- terrainPoints,
- flow,
- accumulation
-)
-
-    const delaunay = Delaunator.from(coords);
-    const triangles = delaunay.triangles;
-
-    const vertices: number[] = [];
-
-    for (let i = 0; i < triangles.length; i++) {
-      const p = points[triangles[i]];
-      vertices.push(
-        +p.easting,
-        +p.northing,
-        +p.elevation
-      );
-    }
-
-    const slopes:number[] = [];
-
-for(let i=0;i<triangles.length;i+=3){
-
- const p1 = points[triangles[i]];
- const p2 = points[triangles[i+1]];
- const p3 = points[triangles[i+2]];
-
- const z1 = +p1.elevation;
- const z2 = +p2.elevation;
- const z3 = +p3.elevation;
-
- const avgSlope = Math.abs((z1+z2+z3)/3);
-
- slopes.push(avgSlope,avgSlope,avgSlope);
-
-}
-
-    const colors:number[] = [];
-
-slopes.forEach(s=>{
-
- let r=0,g=0,b=0;
-
- if(s < 1){
-  g = 1;          // flat = green
- }
- else if(s < 3){
-  r = 1;
-  g = 1;          // medium = yellow
- }
- else{
-  r = 1;          // steep = red
- }
-
- colors.push(r,g,b)
-
-})
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(vertices, 3)
-    );
-
-    geometry.setAttribute(
- "color",
- new THREE.Float32BufferAttribute(colors,3)
-)
-
-    geometry.computeVertexNormals();
-
-    const material = new THREE.MeshStandardMaterial({
-      vertexColors:true,
-      side: THREE.DoubleSide
-    });
-
-    const terrainMesh = new THREE.Mesh(geometry, material);
-    scene.add(terrainMesh);
-
-    // Drag Controls
-    const dragControls = new DragControls(
-      scene.children,
-      camera,
-      renderer.domElement
-    );
-
-    dragControls.addEventListener("drag", (event: any) => {
-      event.object.position.z = 0;
-    });
-
-    // Cross Sections
-    const sections = generateCrossSections(points, 5);
-
-    sections.forEach(sec => {
-
-      const geo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(sec.left.x, sec.left.y, sec.left.z),
-        new THREE.Vector3(sec.right.x, sec.right.y, sec.right.z)
-      ]);
-
-      const line = new THREE.Line(
-        geo,
-        new THREE.LineBasicMaterial({ color: 0xffff00 })
-      );
-
-      scene.add(line);
-    });
-
-    // Earthwork
-    const volumes = sections.map(sec =>
-      calculateSectionVolume(sec, 105)
-    );
-
-    const earthwork = {
-      cut: volumes.reduce((s, v) => s + v.cut, 0),
-      fill: volumes.reduce((s, v) => s + v.fill, 0),
-      net: volumes.reduce((s, v) => s + v.fill - v.cut, 0)
-    };
-
-    setEarthwork(earthwork);
-
-    // Contours
-    const contours = generateContours(points, 1);
-
-    const contourMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-
-contours.forEach(contour => {
-
-  const verts: number[] = [];
-
-  contour.points.forEach(p => {
-    verts.push(p.x, p.y, p.z);
-  });
+  for (let i = 0; i < triangles.length; i++) {
+    const p = points[triangles[i]];
+    vertices.push(+p.easting, +p.northing, +p.elevation);
+  }
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(verts,3)
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+
+  const terrainMesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: 0x228b22, side: THREE.DoubleSide })
   );
 
-  const line = new THREE.Line(geometry, contourMaterial);
+  scene.add(terrainMesh);
 
-  scene.add(line);
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
 
-});
+  // 🔥 MOUSE MOVE
+  const handleMouseMove = (event: MouseEvent) => {
 
-    streams.forEach(stream=>{
+    if (!drawMode) return;
 
- const geo = new THREE.BufferGeometry().setFromPoints([
-  new THREE.Vector3(stream.start.x,stream.start.y,stream.start.z),
-  new THREE.Vector3(stream.end.x,stream.end.y,stream.end.z)
- ])
+    const rect = renderer.domElement.getBoundingClientRect();
 
- const line = new THREE.Line(
-  geo,
-  new THREE.LineBasicMaterial({color:0x0000ff})
- )
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
- scene.add(line)
+    raycaster.setFromCamera(mouse, camera);
 
-})
+    const intersects = raycaster.intersectObject(terrainMesh);
 
-    // Corridor
-    const corridor = generateCorridor(points, 10);
+    if (intersects.length > 0) {
 
-    const roadVertices: number[] = [];
+      let p = intersects[0].point;
 
-    for (let i = 0; i < corridor.length - 1; i++) {
+      // 🔥 SNAP
+      let snapDistance = 5;
+      let closest: any = null;
+      let minDist = Infinity;
 
-      const a = corridor[i];
-      const b = corridor[i + 1];
+      points.forEach(pt => {
+        const dx = +pt.easting - p.x;
+        const dy = +pt.northing - p.z;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-      roadVertices.push(
-        a.left.x, a.left.y, a.left.z,
-        a.right.x, a.right.y, a.right.z,
-        b.left.x, b.left.y, b.left.z
-      );
+        if (dist < snapDistance && dist < minDist) {
+          minDist = dist;
+          closest = pt;
+        }
+      });
 
-      roadVertices.push(
-        b.left.x, b.left.y, b.left.z,
-        a.right.x, a.right.y, a.right.z,
-        b.right.x, b.right.y, b.right.z
-      );
+      if (closest) {
+        p = new THREE.Vector3(
+          +closest.easting,
+          +closest.elevation,
+          +closest.northing
+        );
+      }
+
+      setPreviewPoint(p);
+
+      // 🔴 CURSOR DOT
+      if (!previewSphere) {
+        const geo = new THREE.SphereGeometry(1.2, 16, 16);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        previewSphere = new THREE.Mesh(geo, mat);
+        scene.add(previewSphere);
+      }
+
+      previewSphere.position.copy(p);
+    }
+  };
+
+  // 🔥 CLICK
+  const handleClick = (event: MouseEvent) => {
+
+    if (!drawMode) return;
+
+    const rect = renderer.domElement.getBoundingClientRect();
+
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObject(terrainMesh);
+
+    if (intersects.length > 0) {
+
+      let p = intersects[0].point;
+
+      // 🔥 SNAP
+      let snapDistance = 5;
+      let closest: any = null;
+      let minDist = Infinity;
+
+      points.forEach(pt => {
+        const dx = +pt.easting - p.x;
+        const dy = +pt.northing - p.z;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < snapDistance && dist < minDist) {
+          minDist = dist;
+          closest = pt;
+        }
+      });
+
+      if (closest) {
+        p = new THREE.Vector3(
+          +closest.easting,
+          +closest.elevation,
+          +closest.northing
+        );
+      }
+
+      setDrawPoints(prev => [...prev, p]);
+      setPreviewPoint(null);
+    }
+  };
+
+  // 🔥 DOUBLE CLICK → FINISH
+  const handleDoubleClick = () => {
+    if (drawPoints.length < 2) return;
+    setDrawMode(false);
+  };
+
+  // 🔥 ESC → CANCEL
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setDrawPoints([]);
+      setPreviewPoint(null);
+    }
+  };
+
+  renderer.domElement.addEventListener("mousemove", handleMouseMove);
+  renderer.domElement.addEventListener("click", handleClick);
+  renderer.domElement.addEventListener("dblclick", handleDoubleClick);
+  window.addEventListener("keydown", handleKeyDown);
+
+  // 🔁 LOOP
+  const animate = () => {
+
+    requestAnimationFrame(animate);
+
+    // 🔵 DRAW LINE LIVE
+    const allPoints = previewPoint
+      ? [...drawPoints, previewPoint]
+      : drawPoints;
+
+    if (alignmentLine) {
+      scene.remove(alignmentLine);
     }
 
-    const roadGeometry = new THREE.BufferGeometry();
-    roadGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(roadVertices, 3)
-    );
+    if (allPoints.length > 1) {
 
-    roadGeometry.computeVertexNormals();
-
-    const roadMesh = new THREE.Mesh(
-      roadGeometry,
-      new THREE.MeshStandardMaterial({
-        color: 0x333333,
-        side: THREE.DoubleSide
-      })
-    );
-
-    scene.add(roadMesh);
-
-    // Plot Layout
-    const plots = generatePlotLayout(points, 20, 30);
-
-    plots.forEach(plot => {
-
-      const pts = plot.corners.map(p =>
-        new THREE.Vector3(p.x, p.y, 0)
+      const pts = allPoints.map(p =>
+        new THREE.Vector3(p.x, p.z, p.y)
       );
-
-      pts.push(new THREE.Vector3(
-        plot.corners[0].x,
-        plot.corners[0].y,
-        0
-      ));
 
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
 
-      const line = new THREE.Line(
-        geo,
-        new THREE.LineBasicMaterial({ color: 0xffffff })
-      );
-
-      scene.add(line);
-    });
-
-    // Buildings
-    const buildings = plots.map(p => generateBuildingLayout(p, 3));
-
-    buildings.forEach(building => {
-
-      const pts = building.map(p =>
-        new THREE.Vector3(p.x, p.y, 0)
-      );
-
-      pts.push(new THREE.Vector3(
-        building[0].x,
-        building[0].y,
-        0
-      ));
-
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-
-      const line = new THREE.Line(
+      alignmentLine = new THREE.Line(
         geo,
         new THREE.LineBasicMaterial({ color: 0x00ffff })
       );
 
-      scene.add(line);
-    });
+      scene.add(alignmentLine);
+    }
 
-    alignment?.forEach(seg => {
+    controls.update();
+    renderer.render(scene, camera);
+  };
 
- const geometry = new THREE.BufferGeometry().setFromPoints([
-   new THREE.Vector3(seg.start.x,seg.start.y,seg.start.z),
-   new THREE.Vector3(seg.end.x,seg.end.y,seg.end.z)
- ])
+  animate();
 
- const material = new THREE.LineBasicMaterial({color:0xff0000})
+  // 🧹 CLEANUP
+  return () => {
+    renderer.domElement.removeEventListener("mousemove", handleMouseMove);
+    renderer.domElement.removeEventListener("click", handleClick);
+    renderer.domElement.removeEventListener("dblclick", handleDoubleClick);
+    window.removeEventListener("keydown", handleKeyDown);
+    renderer.dispose();
+  };
 
- const line = new THREE.Line(geometry,material)
+}, [points, drawMode, drawPoints, previewPoint]);
 
- scene.add(line)
+useEffect(() => {
 
-})
+  if (drawPoints.length < 2) return;
 
-    // Utilities
-    const utilities = generateUtilities([], plots);
+  const alignmentData = drawPoints.map(p => ({
+    x: p.x,
+    y: p.z,
+    z: p.y
+  }));
 
-    // AI Planning
-    const rules = {
-      plotWidth: 20,
-      plotDepth: 30,
-      roadWidth: 8,
-      setback: 3
-    };
+  setAlignment(alignmentData);
 
-    const plan = aiSitePlanner(points, rules);
-    const estimate = aiConstructionEstimator(plan);
-
-    setEstimate(estimate);
-
-    const phases = generateConstructionPhases(plan);
-
-    const twinStatus = digitalTwinMonitor(plan, {
-      roads: [],
-      buildings: []
-    });
-
-    setTwinStatus(twinStatus);
-
-    // Lights
-    const light1 = new THREE.DirectionalLight(0xffffff, 1);
-    light1.position.set(100, 100, 200);
-    scene.add(light1);
-
-    scene.add(new THREE.AmbientLight(0x404040));
-
-    controls.addEventListener("change", () => {
- renderer.render(scene,camera)
-})
-
-renderer.render(scene,camera);
-
-    return () => renderer.dispose();
-
-  }, [points, editPlots, simulation]);
+}, [drawPoints]);
 
   useEffect(() => {
 

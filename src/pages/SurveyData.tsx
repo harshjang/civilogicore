@@ -1,4 +1,6 @@
 import WorkspaceSidebar from "@/components/ui/WorkspaceSidebar";
+import WorkspaceToolbar from "@/components/ui/WorkspaceToolbar";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateAlignment } from "@/lib/road/alignment";
 import { generateVerticalProfile } from "@/lib/road/verticalProfile";
 import { generateCrossSections } from "@/lib/road/crossSection";
@@ -68,7 +70,7 @@ export default function SurveyData() {
   const [sections,setSections] = useState<any[]>([]);
   const [corridor,setCorridor] = useState<any[]>([]);
   const [verticalProfile,setVerticalProfile] = useState<any[]>([]);
-  const [activeModule,setActiveModule] = useState("survey");
+  const { activeTool, drawMode, setDrawMode } = useWorkspace();
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -295,6 +297,47 @@ useEffect(() => {
  toast.success(`Area = ${area.toFixed(2)} sq.m`)
 
 },[points])
+
+useEffect(() => {
+
+  if (!activeTool) return;
+
+  if (activeTool === "alignment") {
+    setDrawMode(true);
+    toast.success("Click on terrain to draw alignment");
+  }
+
+  if (activeTool === "sections") {
+    const s = generateCrossSections(points);
+    setSections(s);
+    toast.success("Cross sections generated");
+  }
+
+  if (activeTool === "profile") {
+    const vp = generateVerticalProfile(points);
+    setVerticalProfile(vp);
+    toast.success("Vertical profile generated");
+  }
+
+  if (activeTool === "corridor") {
+    if (alignment.length === 0) {
+      toast.error("Generate alignment first");
+      return;
+    }
+    const c = generateCorridor(alignment);
+    setCorridor(c);
+    toast.success("Corridor generated");
+  }
+
+  if (activeTool === "estimate") {
+    setEstimate(aiConstructionEstimator(points));
+  }
+
+  if (activeTool === "simulation") {
+    setSimulation(true);
+  }
+
+}, [activeTool]);
 
   // Export DXF
   const contourInterval = 1; // meters
@@ -640,12 +683,13 @@ ${level}
 };
   return (
 
-    <div className="flex">
+<div className="flex">
 
-    <WorkspaceSidebar
-    activeTool={activeModule}
-    setActiveTool={setActiveModule}
-    />
+  <WorkspaceSidebar />
+
+  <div className="flex-1">
+
+    <WorkspaceToolbar />
 
     <div className="p-4 md:p-8 space-y-6 pt-14 md:pt-8">
       <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
@@ -746,183 +790,7 @@ ${level}
         </div>
       </motion.div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-
-<Button
- size="sm"
- variant={activeModule==="survey" ? "default":"outline"}
- className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveModule("survey")}
->
-Survey
-</Button>
-
-<Button
- size="sm"
- variant={activeModule==="terrain" ? "default":"outline"}
- className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveModule("terrain")}
->
-Terrain
-</Button>
-
-<Button
- size="sm"
- variant={activeModule==="road" ? "default":"outline"}
- className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveModule("road")}
->
-Road
-</Button>
-
-<Button
- size="sm"
- variant={activeModule==="hydrology" ? "default":"outline"}
- className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveModule("hydrology")}
->
-Hydrology
-</Button>
-
-<Button
- size="sm"
- variant={activeModule==="utilities" ? "default":"outline"}
- className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveModule("utilities")}
->
-Utilities
-</Button>
-
-<Button
- size="sm"
- variant={activeModule==="ai" ? "default":"outline"}
- className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveModule("ai")}
->
-AI
-</Button>
-
 </div>
-
-{activeModule === "survey" && (
-<div className="flex gap-2 mt-4">
-  <Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial" onClick={()=>setEditPlots(!editPlots)}>
-    Edit Plots
-  </Button>
-</div>
-)}
-
-{activeModule==="terrain" && (
-<div className="flex gap-2 mt-4">
-
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Generate Contours</Button>
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">TIN Surface</Button>
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Earthwork</Button>
-
-</div>
-)}
-
-{activeModule==="road" && (
-
-<div className="flex gap-2 mt-2 flex-wrap">
-
-<Button
-size="sm"
-variant="outline"
-className="font-mono text-xs flex-1 sm:flex-initial"
-onClick={()=>{
- const a = generateAlignment(points)
- setAlignment(a)
- toast.success("Alignment generated")
-}}
->
-Generate Alignment
-</Button>
-
-<Button
-size="sm"
-variant="outline"
-className="font-mono text-xs flex-1 sm:flex-initial"
-onClick={()=>{
- const s = generateCrossSections(points)
- setSections(s)
- toast.success("Cross sections generated")
-}}
->
-Cross Sections
-</Button>
-
-<Button
-size="sm"
-variant="outline"
-className="font-mono text-xs flex-1 sm:flex-initial"
-onClick={()=>{
- const vp = generateVerticalProfile(points)
-setVerticalProfile(vp)
- toast.success("Vertical profile generated")
-}}
->
-Vertical Profile
-</Button>
-
-<Button
-size="sm"
-variant="outline"
-className="font-mono text-xs flex-1 sm:flex-initial"
-onClick={()=>{
- if (alignment.length === 0) {
-  toast.error("Generate alignment first");
-  return;
-}
- const c = generateCorridor(alignment)
- setCorridor(c)
- toast.success("Corridor generated")
-}}
->
-Create Corridor
-</Button>
-
-</div>
-
-)}
-
-{activeModule==="hydrology" && (
-<div className="flex gap-2 mt-4">
-
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Drainage Flow</Button>
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Catchment Area</Button>
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Watershed</Button>
-
-</div>
-)}
-
-{activeModule==="utilities" && (
-<div className="flex gap-2 mt-4">
-
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Water Line</Button>
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Sewer Network</Button>
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Storm Drain</Button>
-
-</div>
-)}
-
-{activeModule==="ai" && (
-<div className="flex gap-2 mt-4">
-
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial"
-onClick={()=>setEstimate(aiConstructionEstimator(points))}
->
-AI Construction Plan
-</Button>
-
-<Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial"
-onClick={()=>setSimulation(!simulation)}
->
-4D Simulation
-</Button>
-
-</div>
-)}
 
       {/* Data Table */}
       <motion.div
@@ -1030,6 +898,8 @@ onClick={()=>setSimulation(!simulation)}
  sections={sections}
  corridor={corridor}
  verticalProfile={verticalProfile}
+ drawMode={drawMode}
+ setAlignment={setAlignment}
  setEarthwork={setEarthwork}
  editPlots={editPlots}
  setEstimate={setEstimate}

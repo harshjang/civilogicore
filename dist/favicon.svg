@@ -1,0 +1,56 @@
+<svg width="512" height="512" viewBox="80 148 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gCyan" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ED6D2"/>
+      <stop offset="0.5" stop-color="#1A8FA0"/>
+      <stop offset="1" stop-color="#0E2A4A"/>
+    </linearGradient>
+    <linearGradient id="gDark" x1="100" y1="100" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E4D6E"/>
+      <stop offset="1" stop-color="#061828"/>
+    </linearGradient>
+    <filter id="outerGlow">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- C (left) -->
+  <g filter="url(#outerGlow)">
+    <path d="M200 168 C160 168, 108 200, 108 256 C108 312, 160 344, 200 344"
+      stroke="url(#gCyan)" stroke-width="28" stroke-linecap="square" fill="none"/>
+    <path d="M190 188 C162 192, 132 216, 132 256 C132 296, 162 320, 190 324"
+      stroke="url(#gDark)" stroke-width="8" stroke-linecap="square" fill="none" opacity="0.9"/>
+    <line x1="108" y1="200" x2="132" y2="210" stroke="#2ED6D2" stroke-width="2" opacity="0.5"/>
+    <line x1="108" y1="312" x2="132" y2="302" stroke="#2ED6D2" stroke-width="2" opacity="0.5"/>
+    <circle cx="110" cy="218" r="3" fill="#2ED6D2" opacity="0.7"/>
+    <circle cx="110" cy="294" r="3" fill="#2ED6D2" opacity="0.7"/>
+  </g>
+
+  <!-- L (center) -->
+  <g filter="url(#outerGlow)">
+    <rect x="224" y="148" width="28" height="196" rx="2" fill="url(#gCyan)"/>
+    <rect x="224" y="320" width="100" height="24" rx="2" fill="url(#gCyan)"/>
+    <rect x="232" y="156" width="12" height="172" rx="1" fill="url(#gDark)" opacity="0.85"/>
+    <rect x="248" y="326" width="68" height="10" rx="1" fill="url(#gDark)" opacity="0.85"/>
+    <polygon points="252,320 252,296 276,320" fill="#2ED6D2" opacity="0.3"/>
+    <g stroke="#2ED6D2" stroke-width="1.5" opacity="0.4">
+      <line x1="218" y1="168" x2="224" y2="168"/>
+      <line x1="218" y1="208" x2="224" y2="208"/>
+      <line x1="218" y1="248" x2="224" y2="248"/>
+      <line x1="218" y1="288" x2="224" y2="288"/>
+    </g>
+  </g>
+
+  <!-- C (right) -->
+  <g filter="url(#outerGlow)">
+    <path d="M340 168 C380 168, 418 200, 418 256 C418 312, 380 344, 340 344"
+      stroke="url(#gCyan)" stroke-width="28" stroke-linecap="square" fill="none"/>
+    <path d="M348 188 C372 192, 394 216, 394 256 C394 296, 372 320, 348 324"
+      stroke="url(#gDark)" stroke-width="8" stroke-linecap="square" fill="none" opacity="0.9"/>
+    <line x1="418" y1="200" x2="394" y2="210" stroke="#2ED6D2" stroke-width="2" opacity="0.5"/>
+    <line x1="418" y1="312" x2="394" y2="302" stroke="#2ED6D2" stroke-width="2" opacity="0.5"/>
+    <circle cx="416" cy="218" r="3" fill="#2ED6D2" opacity="0.7"/>
+    <circle cx="416" cy="294" r="3" fill="#2ED6D2" opacity="0.7"/>
+  </g>
+</svg>

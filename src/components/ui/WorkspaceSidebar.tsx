@@ -1,31 +1,26 @@
-export default function WorkspaceSidebar({activeTool,setActiveTool}){
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
-const tools=[
-"survey",
-"terrain",
-"road",
-"hydrology",
-"utilities",
-"ai"
-]
+const modules = ["survey", "terrain", "road", "hydrology", "utilities", "ai"];
 
-return(
+export default function WorkspaceSidebar() {
+  const { activeModule, setActiveModule, setActiveTool } = useWorkspace();
 
-<div className="w-48 border-r border-border p-3 flex flex-col gap-2">
-
-{tools.map(t=>(
-<button
-key={t}
-className={`text-left px-3 py-2 rounded font-mono text-xs
-${activeTool===t ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
-onClick={()=>setActiveTool(t)}
->
-{t.toUpperCase()}
-</button>
-))}
-
-</div>
-
-)
-
+  return (
+    <div className="w-48 bg-sidebar p-3 space-y-2">
+      {modules.map((m) => (
+        <button
+          key={m}
+          onClick={() => {
+            setActiveModule(m);
+            setActiveTool(""); // reset tool
+          }}
+          className={`w-full text-left p-2 rounded ${
+            activeModule === m ? "bg-primary text-white" : "bg-muted"
+          }`}
+        >
+          {m.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
 }
