@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -9,3 +10,7 @@ if (savedTheme === "light") {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+<WorkspaceProvider>
+  <App />
+</WorkspaceProvider>;
