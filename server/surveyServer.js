@@ -1,24 +1,22 @@
-const WebSocket = require("ws")
+import WebSocket, { WebSocketServer } from "ws";
 
-const wss = new WebSocket.Server({ port: process.env.PORT || 8080 })
+const port = process.env.PORT || 3000;
 
-console.log("Survey WebSocket server running")
+const wss = new WebSocketServer({ port });
 
-wss.on("connection", ws => {
+console.log("WebSocket server running on port", port);
 
-  console.log("Client connected")
+wss.on("connection", (ws) => {
+  console.log("Client connected");
 
-  ws.on("message", msg => {
+  // Example: send dummy survey point every 3 sec
+  const interval = setInterval(() => {
+    const point = `${Math.random()*100},${Math.random()*100},${Math.random()*50}`;
+    ws.send(point);
+  }, 3000);
 
-    console.log("Incoming survey:", msg.toString())
-
-    // broadcast to all connected clients
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(msg.toString())
-      }
-    })
-
-  })
-
-})
+  ws.on("close", () => {
+    clearInterval(interval);
+    console.log("Client disconnected");
+  });
+});
