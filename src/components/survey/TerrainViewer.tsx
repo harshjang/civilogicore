@@ -34,6 +34,7 @@ export default function TerrainViewer({
   alignment,
   sections,
   corridor,
+  verticalProfile,
   setEarthwork,
   editPlots,
   setEstimate,
@@ -44,6 +45,7 @@ export default function TerrainViewer({
   alignment:any[];
   sections:any[];
   corridor:any[];
+  verticalProfile: any[];
   setEarthwork: any;
   editPlots: boolean;
   setEstimate: any;

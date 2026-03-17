@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { polygonArea } from "@/lib/survey/calcArea";
 import { aiConstructionEstimator } from "@/lib/survey/aiConstructionEstimator";
-import { generateConstructionPhases } from "@/lib/survey/constructionSimulation";
 
 interface SurveyPoint {
   id: string;
@@ -64,13 +63,12 @@ export default function SurveyData() {
   const [estimate,setEstimate]=useState<any>(null);
   const [simulation,setSimulation] = useState(false);
   const [twinStatus,setTwinStatus] = useState<any>(null);
-  const [activeTool,setActiveTool] = useState("survey");
   const [advancedMode,setAdvancedMode] = useState(false);
   const [alignment,setAlignment] = useState<any[]>([]);
   const [sections,setSections] = useState<any[]>([]);
   const [corridor,setCorridor] = useState<any[]>([]);
   const [verticalProfile,setVerticalProfile] = useState<any[]>([]);
-  const [activeTool,setActiveTool] = useState("road");
+  const [activeModule,setActiveModule] = useState("survey");
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -139,13 +137,12 @@ export default function SurveyData() {
   }, [location.state]);
 
   useEffect(()=>{
-
  if(points.length < 2) return
 
- const prof = generateRoadProfile(points)
+ const ordered = orderPoints(points)
+ const prof = generateRoadProfile(ordered)
 
  setProfile(prof)
-
 },[points])
 
   // Live Total Station Listener
@@ -646,8 +643,8 @@ ${level}
     <div className="flex">
 
     <WorkspaceSidebar
-    activeTool={activeTool}
-    setActiveTool={setActiveTool}
+    activeTool={activeModule}
+    setActiveTool={setActiveModule}
     />
 
     <div className="p-4 md:p-8 space-y-6 pt-14 md:pt-8">
@@ -753,61 +750,69 @@ ${level}
 
 <Button
  size="sm"
- variant={activeTool==="survey" ? "default":"outline"}
+ variant={activeModule==="survey" ? "default":"outline"}
  className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveTool("survey")}
+ onClick={()=>setActiveModule("survey")}
 >
 Survey
 </Button>
 
 <Button
  size="sm"
- variant={activeTool==="terrain" ? "default":"outline"}
+ variant={activeModule==="terrain" ? "default":"outline"}
  className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveTool("terrain")}
+ onClick={()=>setActiveModule("terrain")}
 >
 Terrain
 </Button>
 
 <Button
  size="sm"
- variant={activeTool==="road" ? "default":"outline"}
+ variant={activeModule==="road" ? "default":"outline"}
  className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveTool("road")}
+ onClick={()=>setActiveModule("road")}
 >
 Road
 </Button>
 
 <Button
  size="sm"
- variant={activeTool==="hydrology" ? "default":"outline"}
+ variant={activeModule==="hydrology" ? "default":"outline"}
  className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveTool("hydrology")}
+ onClick={()=>setActiveModule("hydrology")}
 >
 Hydrology
 </Button>
 
 <Button
  size="sm"
- variant={activeTool==="utilities" ? "default":"outline"}
+ variant={activeModule==="utilities" ? "default":"outline"}
  className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveTool("utilities")}
+ onClick={()=>setActiveModule("utilities")}
 >
 Utilities
 </Button>
 
 <Button
  size="sm"
- variant={activeTool==="ai" ? "default":"outline"}
+ variant={activeModule==="ai" ? "default":"outline"}
  className="font-mono text-xs flex-1 sm:flex-initial"
- onClick={()=>setActiveTool("ai")}
+ onClick={()=>setActiveModule("ai")}
 >
 AI
 </Button>
 
 </div>
 
-{activeTool==="terrain" && (
+{activeModule === "survey" && (
+<div className="flex gap-2 mt-4">
+  <Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial" onClick={()=>setEditPlots(!editPlots)}>
+    Edit Plots
+  </Button>
+</div>
+)}
+
+{activeModule==="terrain" && (
 <div className="flex gap-2 mt-4">
 
 <Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Generate Contours</Button>
@@ -817,7 +822,7 @@ AI
 </div>
 )}
 
-{activeTool==="road" && (
+{activeModule==="road" && (
 
 <div className="flex gap-2 mt-2 flex-wrap">
 
@@ -852,8 +857,8 @@ size="sm"
 variant="outline"
 className="font-mono text-xs flex-1 sm:flex-initial"
 onClick={()=>{
- const p = generateVerticalProfile(points)
- setProfile(p)
+ const vp = generateVerticalProfile(points)
+setVerticalProfile(vp)
  toast.success("Vertical profile generated")
 }}
 >
@@ -865,8 +870,11 @@ size="sm"
 variant="outline"
 className="font-mono text-xs flex-1 sm:flex-initial"
 onClick={()=>{
- const s = generateCrossSections(points)
- const c = generateCorridor(s)
+ if (alignment.length === 0) {
+  toast.error("Generate alignment first");
+  return;
+}
+ const c = generateCorridor(alignment)
  setCorridor(c)
  toast.success("Corridor generated")
 }}
@@ -878,7 +886,7 @@ Create Corridor
 
 )}
 
-{activeTool==="hydrology" && (
+{activeModule==="hydrology" && (
 <div className="flex gap-2 mt-4">
 
 <Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Drainage Flow</Button>
@@ -888,7 +896,7 @@ Create Corridor
 </div>
 )}
 
-{activeTool==="utilities" && (
+{activeModule==="utilities" && (
 <div className="flex gap-2 mt-4">
 
 <Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial">Water Line</Button>
@@ -898,7 +906,7 @@ Create Corridor
 </div>
 )}
 
-{activeTool==="ai" && (
+{activeModule==="ai" && (
 <div className="flex gap-2 mt-4">
 
 <Button size="sm" className="font-mono text-xs flex-1 sm:flex-initial"
@@ -1021,6 +1029,7 @@ onClick={()=>setSimulation(!simulation)}
  alignment={alignment}
  sections={sections}
  corridor={corridor}
+ verticalProfile={verticalProfile}
  setEarthwork={setEarthwork}
  editPlots={editPlots}
  setEstimate={setEstimate}
