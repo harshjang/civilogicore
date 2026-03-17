@@ -150,7 +150,7 @@ useEffect(() => {
 
   if (!liveMode) return;
 
-  const ws = new WebSocket("wss://civilogicore.railway.internal");
+  const ws = new WebSocket(import.meta.env.VITE_WS_URL);
 
   ws.onopen = () => {
     console.log("Connected to Total Station server");
