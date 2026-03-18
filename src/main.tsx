@@ -1,3 +1,5 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { useWorkspace, WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import App from "./App.tsx";
@@ -11,9 +13,13 @@ if (savedTheme === "light") {
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-<WorkspaceProvider>
-  <App />
-</WorkspaceProvider>;
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <WorkspaceProvider>
+      <App />
+    </WorkspaceProvider>
+  </React.StrictMode>
+);
 
 const workspace = useWorkspace();
 

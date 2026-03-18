@@ -23,6 +23,7 @@ export function WorkspaceProvider({ children }: any) {
   );
 }
 
-export function useWorkspace() {
-  return useContext(WorkspaceContext);
-}
+export const useWorkspace = () => useContext(WorkspaceContext);
+
+const workspace = useWorkspace();
+console.log(workspace);
