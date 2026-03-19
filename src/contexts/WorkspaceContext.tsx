@@ -23,7 +23,13 @@ export function WorkspaceProvider({ children }: any) {
   );
 }
 
-export const useWorkspace = () => useContext(WorkspaceContext);
+export const useWorkspace = () => {
+  const context = useContext(WorkspaceContext);
+  if (!context) {
+    throw new Error("useWorkspace must be used inside WorkspaceProvider");
+  }
+  return context;
+};
 
 const workspace = useWorkspace();
 console.log(workspace);
