@@ -4,11 +4,7 @@ import {
  extractDrainage
 } from "@/lib/survey/hydrology";
 import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
 import Delaunator from "delaunator";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { DragControls } from "three/examples/jsm/controls/DragControls.js";
-
 import { generateContours } from "@/lib/survey/generateContours";
 import { generateCorridor } from "@/lib/survey/generateCorridor";
 import { generatePlotLayout } from "@/lib/survey/generatePlotLayout";
@@ -17,9 +13,7 @@ import { generateUtilities } from "@/lib/survey/generateUtilities";
 import { generateCrossSections } from "@/lib/survey/generateCrossSections";
 import { calculateSectionVolume } from "@/lib/survey/calcSectionVolume";
 import { calculateEarthwork } from "@/lib/survey/calcEarthwork";
-
 import { aiSitePlanner } from "@/lib/survey/aiSitePlanner";
-import { aiConstructionEstimator } from "@/lib/survey/aiConstructionEstimator";
 import { generateConstructionPhases } from "@/lib/survey/constructionSimulation";
 import { digitalTwinMonitor } from "@/lib/survey/digitalTwinMonitor";
 import { List } from "lucide-react";
@@ -64,13 +58,27 @@ export default function TerrainViewer({
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [drawPoints, setDrawPoints] = useState<any[]>([]);
   const [previewPoint, setPreviewPoint] = useState<any>(null);
+  const [THREE, setTHREE] = useState<any>(null);
+  const [OrbitControls, setOrbitControls] = useState<any>(null);
+
+  useEffect(() => {
+  const loadThree = async () => {
+    const THREE_mod = await import("three");
+    const controls_mod = await import("three/examples/jsm/controls/OrbitControls.js");
+
+    setTHREE(THREE_mod);
+    setOrbitControls(() => controls_mod.OrbitControls);
+  };
+
+  loadThree();
+}, []);
 
   useEffect(() => {
 
-  if (!mountRef.current || points.length < 3) return;
+  if (!mountRef.current || points.length < 3 || !THREE || !OrbitControls ) return;
 
-  let previewSphere: THREE.Mesh | null = null;
-  let alignmentLine: THREE.Line | null = null;
+  let previewSphere: any = null;
+  let alignmentLine: any = null;
 
   const width = mountRef.current.clientWidth;
   const height = 450;

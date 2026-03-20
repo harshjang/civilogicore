@@ -8,7 +8,8 @@ import { generateCorridor } from "@/lib/road/corridor";
 import { orderPoints } from "@/lib/survey/orderPoints";
 import { generateRoadProfile } from "@/lib/survey/generateRoadProfile";
 import RoadProfileChart from "@/components/survey/RoadProfileChart";
-import TerrainViewer from "@/components/survey/TerrainViewer";
+import { lazy, Suspense } from "react";
+const TerrainViewer = lazy(() => import("@/components/survey/TerrainViewer"));
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -71,6 +72,20 @@ export default function SurveyData() {
   const [corridor,setCorridor] = useState<any[]>([]);
   const [verticalProfile,setVerticalProfile] = useState<any[]>([]);
   const { activeTool, drawMode, setDrawMode } = useWorkspace();
+  const [THREE, setTHREE] = useState<any>(null);
+  const [OrbitControls, setOrbitControls] = useState<any>(null);
+
+  useEffect(() => {
+  const loadThree = async () => {
+    const THREE_mod = await import("three");
+    const controls_mod = await import("three/examples/jsm/controls/OrbitControls.js");
+
+    setTHREE(THREE_mod);
+    setOrbitControls(() => controls_mod.OrbitControls);
+  };
+
+  loadThree();
+}, []);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -892,20 +907,23 @@ ${level}
       3D Terrain Preview
     </h2>
 
-    <TerrainViewer
- points={points}
- alignment={alignment}
- sections={sections}
- corridor={corridor}
- verticalProfile={verticalProfile}
- drawMode={drawMode}
- setAlignment={setAlignment}
- setEarthwork={setEarthwork}
- editPlots={editPlots}
- setEstimate={setEstimate}
- simulation={simulation}
- setTwinStatus={setTwinStatus}
-/>
+    <Suspense fallback={<div className="text-xs font-mono">Loading 3D...</div>}>
+  <TerrainViewer
+    points={points}
+    alignment={alignment}
+    sections={sections}
+    corridor={corridor}
+    verticalProfile={verticalProfile}
+    drawMode={drawMode}
+    setAlignment={setAlignment}
+    setDrawMode={setDrawMode}
+    setEarthwork={setEarthwork}
+    editPlots={editPlots}
+    setEstimate={setEstimate}
+    simulation={simulation}
+    setTwinStatus={setTwinStatus}
+  />
+</Suspense>
   </div>
 )}
 
