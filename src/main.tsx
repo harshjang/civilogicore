@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { useWorkspace, WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -15,9 +16,11 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <WorkspaceProvider>
-      <App />
-    </WorkspaceProvider>
+    <AuthProvider>
+      <WorkspaceProvider>
+        <App />
+      </WorkspaceProvider>
+    </AuthProvider>
   </React.StrictMode>
 );
 
