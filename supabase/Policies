@@ -1,0 +1,15 @@
+create policy "Project access"
+on survey_points
+for all
+using (
+  project_id in (
+    select project_id
+    from project_members
+    where user_id = auth.uid()
+  )
+);
+await supabase.from("project_members").insert({
+  project_id: projectId,
+  user_id: newUserId,
+  role: "engineer",
+});

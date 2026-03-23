@@ -1,3 +1,4 @@
+import InstallButton from "@/components/ui/InstallButton";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 export default function WorkspaceToolbar() {
@@ -27,6 +28,9 @@ export default function WorkspaceToolbar() {
           {tool}
         </button>
       ))}
+      <div className="flex items-center gap-2 ml-auto">
+  <InstallButton />
+</div>
     </div>
   );
 }

@@ -2,32 +2,65 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { VitePWA } from "vite-plugin-pwa";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   base: "/",
+
   server: {
-    host: "::",
+    host: true,
     port: 8080,
-    hmr: {
-      overlay: false,
-    },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["logo.svg"],
+
+      manifest: {
+        name: "CiviLogiCore",
+        short_name: "CivilCore",
+        theme_color: "#0a0a0a",
+        background_color: "#0a0a0a",
+        display: "standalone",
+        icons: [
+          {
+            src: "/logo.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+        ],
+      },
+
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === "script",
+            handler: "NetworkFirst", // 🔥 IMPORTANT
+          },
+          {
+            urlPattern: ({ request }) => request.destination === "style",
+            handler: "StaleWhileRevalidate",
+          },
+          {
+            urlPattern: ({ request }) => request.destination === "image",
+            handler: "CacheFirst",
+          },
+        ],
+      },
+    }),
+  ].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
   build: {
     chunkSizeWarningLimit: 600,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          three: ["three"],
-          vendor: ["react", "react-dom"],
-        },
-      },
-    },
   },
 }));
