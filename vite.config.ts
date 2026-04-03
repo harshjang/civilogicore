@@ -28,11 +28,16 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         icons: [
           {
-            src: "/logo.svg",
+            src: "/logo-192.png",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
           },
-        ],
+          {
+            src: "/logo-512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ]
       },
 
       workbox: {
@@ -63,11 +68,4 @@ export default defineConfig(({ mode }) => ({
   build: {
     chunkSizeWarningLimit: 600,
   },
-  icons: [
-  {
-    src: "/logo.png", // use PNG not SVG
-    sizes: "192x192",
-    type: "image/png",
-  },
-]
 }));
