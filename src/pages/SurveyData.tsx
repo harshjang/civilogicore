@@ -1233,7 +1233,6 @@ ${level}
   );
 }
 
-        <div className="p-4 md:p-8 space-y-6 pt-14 md:pt-8">
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
 
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
