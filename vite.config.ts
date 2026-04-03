@@ -63,4 +63,11 @@ export default defineConfig(({ mode }) => ({
   build: {
     chunkSizeWarningLimit: 600,
   },
+  icons: [
+  {
+    src: "/logo.png", // use PNG not SVG
+    sizes: "192x192",
+    type: "image/png",
+  },
+]
 }));
