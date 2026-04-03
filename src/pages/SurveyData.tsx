@@ -25,6 +25,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SaveToDocumentsDialog from "@/components/survey/SaveToDocumentsDialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
