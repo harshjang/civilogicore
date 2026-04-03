@@ -16,7 +16,7 @@ const TerrainViewer = lazy(() => import("@/components/survey/TerrainViewer"));
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus } from "lucide-react";
+import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus, MoreVertical, Settings2, Radio, Pencil, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
