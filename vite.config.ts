@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "CiviLogiCore",
         short_name: "CivilCore",
+        description: "AI Powered Civil Engineering Platform",
         theme_color: "#0a0a0a",
         background_color: "#0a0a0a",
         display: "standalone",
