@@ -113,7 +113,7 @@ export default function AppSidebar() {
   }
 
   return (
-    <aside className="w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
+    <aside className="w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 shadow-[0_0_30px_hsl(var(--blueprint-cyan)/0.05)]">
       <SidebarContent />
     </aside>
   );
