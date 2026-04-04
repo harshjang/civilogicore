@@ -3,11 +3,23 @@ import AppSidebar from "./AppSidebar";
 
 export default function AppLayout() {
   return (
-    <div className="flex min-h-screen bg-background blueprint-grid">
-      <AppSidebar />
-      <main className="flex-1 overflow-auto min-w-0">
-        <Outlet />
-      </main>
-    </div>
+    <div className="relative flex min-h-screen bg-background text-foreground overflow-hidden font-body">
+  
+  {/* Base Grid */}
+  <div className="absolute inset-0 blueprint-grid" />
+  
+  {/* Fine Grid Overlay */}
+  <div className="absolute inset-0 blueprint-grid-fine opacity-40" />
+  
+  {/* Cyan Glow Gradient */}
+  <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--blueprint-cyan)/0.08)] via-transparent to-[hsl(195_70%_60%/0.05)]" />
+
+  {/* Actual Layout */}
+  <AppSidebar />
+
+  <main className="relative flex-1 overflow-auto min-w-0 p-6">
+    <Outlet />
+  </main>
+</div>
   );
 }
