@@ -232,56 +232,56 @@ export default function SurveyData() {
   }, []);
 
   useEffect(() => {
-  const handleOnline = () => {
-    if (user && projectId) {
-      syncPoints(user.id, projectId);
-      toast.success("Synced with server");
-    }
-  };
+    const handleOnline = () => {
+      if (user && projectId) {
+        syncPoints(user.id, projectId);
+        toast.success("Synced with server");
+      }
+    };
 
-  window.addEventListener("online", handleOnline);
-  return () => window.removeEventListener("online", handleOnline);
-}, [user, projectId]);
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [user, projectId]);
 
   useEffect(() => {
-  const handler = (e: BeforeUnloadEvent) => {
-    if (hasUnsavedChanges) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-  };
-
-  window.addEventListener("beforeunload", handler);
-  return () => window.removeEventListener("beforeunload", handler);
-}, [hasUnsavedChanges]);
-
-useEffect(() => {
-  const dirty = points.some(p => p.isNew || p.isDirty);
-  setHasUnsavedChanges(dirty);
-}, [points]);
-
-useEffect(() => {
-  if (!hasUnsavedChanges) return;
-
-  const timer = setTimeout(async () => {
-    try {
-      // 1. Save locally first (offline safety)
-      savePointsLocal(points);
-
-      // 2. Save to DB if online
-      if (user) {
-        await saveAll(); // your existing function
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
       }
+    };
 
-      toast.success("Auto-saved");
-    } catch (err) {
-      console.error(err);
-      toast.error("Auto-save failed");
-    }
-  }, 2000); // 2 sec debounce
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
 
-  return () => clearTimeout(timer);
-}, [points]);
+  useEffect(() => {
+    const dirty = points.some(p => p.isNew || p.isDirty);
+    setHasUnsavedChanges(dirty);
+  }, [points]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        // 1. Save locally first (offline safety)
+        savePointsLocal(points);
+
+        // 2. Save to DB if online
+        if (user) {
+          await saveAll(); // your existing function
+        }
+
+        toast.success("Auto-saved");
+      } catch (err) {
+        console.error(err);
+        toast.error("Auto-save failed");
+      }
+    }, 2000); // 2 sec debounce
+
+    return () => clearTimeout(timer);
+  }, [points]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -560,32 +560,32 @@ useEffect(() => {
   }, [points])
 
   useEffect(() => {
-  const dirty = points.some(p => p.isNew || p.isDirty);
-  setHasUnsavedChanges(dirty);
-}, [points]);
+    const dirty = points.some(p => p.isNew || p.isDirty);
+    setHasUnsavedChanges(dirty);
+  }, [points]);
 
-useEffect(() => {
-  if (!hasUnsavedChanges) return;
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
 
-  const timer = setTimeout(async () => {
-    try {
-      // 1. Save locally first (offline safety)
-      savePointsLocal(points);
+    const timer = setTimeout(async () => {
+      try {
+        // 1. Save locally first (offline safety)
+        savePointsLocal(points);
 
-      // 2. Save to DB if online
-      if (user) {
-        await saveAll(); // your existing function
+        // 2. Save to DB if online
+        if (user) {
+          await saveAll(); // your existing function
+        }
+
+        toast.success("Auto-saved");
+      } catch (err) {
+        console.error(err);
+        toast.error("Auto-save failed");
       }
+    }, 2000); // 2 sec debounce
 
-      toast.success("Auto-saved");
-    } catch (err) {
-      console.error(err);
-      toast.error("Auto-save failed");
-    }
-  }, 2000); // 2 sec debounce
-
-  return () => clearTimeout(timer);
-}, [points]);
+    return () => clearTimeout(timer);
+  }, [points]);
 
   useEffect(() => {
 
@@ -743,16 +743,16 @@ useEffect(() => {
   }, [user, projectId]);
 
   useEffect(() => {
-  const handler = (e: BeforeUnloadEvent) => {
-    if (hasUnsavedChanges) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-  };
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
 
-  window.addEventListener("beforeunload", handler);
-  return () => window.removeEventListener("beforeunload", handler);
-}, [hasUnsavedChanges]);
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
 
   // Export DXF
   const contourInterval = 1; // meters
@@ -1161,12 +1161,12 @@ ${level}
           <div className="flex flex-wrap gap-3 w-full sm:w-auto sm:ml-auto">
 
             <div className="text-xs font-mono">
-  {hasUnsavedChanges ? (
-    <span className="text-yellow-500">● Unsaved</span>
-  ) : (
-    <span className="text-green-500">● Saved</span>
-  )}
-</div>
+              {hasUnsavedChanges ? (
+                <span className="text-yellow-500">● Unsaved</span>
+              ) : (
+                <span className="text-green-500">● Saved</span>
+              )}
+            </div>
 
             {/* EDIT */}
             <ToolbarGroup label="Edit">
@@ -1224,22 +1224,22 @@ ${level}
             </ToolbarGroup>
 
             {/* PLOT */}
-            <ToolbarGroup label="Plot">
-              <Button onClick={() => {
-                if (!canEdit(role)) return toast.error("No permission");
-                setPoints([]);
-                toast.success("New plot created");
-              }}>
-                New Plot
-              </Button>
-            </ToolbarGroup>
+
+            <Button onClick={() => {
+              if (!canEdit(role)) return toast.error("No permission");
+              setPoints([]);
+              toast.success("Entries cleared");
+            }}>
+              Clear
+            </Button>
+
 
           </div>
         </motion.div>
 
         {activeModule === "Survey" && (
           <>
-            <div className="bg-card border border-border rounded-xl p-3 mb-4">
+            {/* <div className="bg-card border border-border rounded-xl p-3 mb-4">
               <div className="text-xs font-mono text-muted-foreground mb-2">LAYERS</div>
 
               {defaultLayers.map(layer => (
@@ -1266,7 +1266,7 @@ ${level}
               ))}
             </div>
 
-            {/* Data Table */}
+            
             <motion.div
               className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan overflow-hidden"
               initial={{ opacity: 0, y: 10 }}
@@ -1359,7 +1359,7 @@ ${level}
                   </table>
                 </div>
               )}
-            </motion.div>
+            </motion.div> */}
           </>
         )}
 
