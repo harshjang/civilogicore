@@ -1445,17 +1445,17 @@ ${level}
 
           <div className="max-h-40 overflow-y-auto text-xs font-mono space-y-1">
 
-  {history.map((_, index) => (
-    <div
-      key={index}
-      className="cursor-pointer hover:text-primary"
-      onClick={() => {
-        setPoints([...history[index]]);
-      }}
-    >
-      Version {index + 1}
-    </div>
-  ))}
+            {history.map((_, index) => (
+              <div
+                key={index}
+                className="cursor-pointer hover:text-primary"
+                onClick={() => {
+                  setPoints([...history[index]]);
+                }}
+              >
+                Version {index + 1}
+              </div>
+            ))}
             {estimate && (
               <div className="bg-card rounded-lg border border-border p-3">
                 <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">AI Construction Estimate</h3>
