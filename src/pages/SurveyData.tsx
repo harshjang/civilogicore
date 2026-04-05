@@ -1033,8 +1033,6 @@ ${level}
                 Role: {role.toUpperCase()}
               </div>
 
-<<<<<<< HEAD
-=======
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 px-2.5 font-mono text-[11px] gap-1.5">
@@ -1083,7 +1081,6 @@ ${level}
                   </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
->>>>>>> d1ab2387
             </div>
             <div className="text-xs font-mono">
               Live Users: {Object.values(presenceState).flat().length}
