@@ -16,7 +16,7 @@ const TerrainViewer = lazy(() => import("@/components/survey/TerrainViewer"));
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus } from "lucide-react";
+import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus, MoreVertical, Settings2, Radio, Pencil, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +24,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SaveToDocumentsDialog from "@/components/survey/SaveToDocumentsDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1026,6 +1033,57 @@ ${level}
                 Role: {role.toUpperCase()}
               </div>
 
+<<<<<<< HEAD
+=======
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 px-2.5 font-mono text-[11px] gap-1.5">
+                    <Settings2 className="w-3 h-3" />
+                    Tools
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="font-mono text-xs">
+                  <DropdownMenuItem onClick={() => setLiveMode(!liveMode)} className="gap-2">
+                    <Radio className={`w-3.5 h-3.5 ${liveMode ? "text-primary" : ""}`} />
+                    {liveMode ? "Live ON" : "Live OFF"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setEditPlots(!editPlots)} className="gap-2">
+                    <Pencil className={`w-3.5 h-3.5 ${editPlots ? "text-primary" : ""}`} />
+                    {editPlots ? "Editing" : "Edit Plots"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-destructive focus:text-destructive">
+                        <FilePlus className="w-3.5 h-3.5" /> New Plot
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="font-mono">Start New Plot?</AlertDialogTitle>
+                        <AlertDialogDescription className="font-mono text-xs">
+                          This will permanently delete all current survey points. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="font-mono text-xs">Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="font-mono text-xs" onClick={async () => {
+                          if (!user) return;
+                          const dbPoints = points.filter(p => !p.isNew);
+                          if (dbPoints.length > 0) {
+                            const { error } = await supabase.from("survey_points").delete().eq("user_id", user.id);
+                            if (error) { toast.error("Failed to clear points"); console.error(error); return; }
+                          }
+                          setPoints([]);
+                          toast.success("Ready for new plot entries");
+                        }}>Continue</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
+>>>>>>> d1ab2387
             </div>
             <div className="text-xs font-mono">
               Live Users: {Object.values(presenceState).flat().length}
@@ -1401,7 +1459,60 @@ ${level}
                 Version {index + 1}
               </div>
             ))}
+            {estimate && (
+              <div className="bg-card rounded-lg border border-border p-3">
+                <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">AI Construction Estimate</h3>
+                <div className="space-y-1">
+                  {[["Road", `${estimate.roadLength.toFixed(2)} m`], ["Building", `${estimate.buildingArea.toFixed(2)} m²`], ["Water", `${estimate.waterLength.toFixed(2)} m`], ["Sewer", `${estimate.sewerLength.toFixed(2)} m`]].map(([k, v]) => (
+                    <div key={k} className="flex justify-between font-mono text-[11px]">
+                      <span className="text-muted-foreground">{k}</span>
+                      <span className="text-foreground">{v}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-mono text-[11px] pt-1 border-t border-border">
+                    <span className="text-muted-foreground font-semibold">Total</span>
+                    <span className="text-primary font-semibold">${estimate.totalCost.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {twinStatus && (
+              <div className="bg-card rounded-lg border border-border p-3">
+                <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Digital Twin</h3>
+                <div className="space-y-1">
+                  {[["Planned", twinStatus.plannedProgress], ["Completed", twinStatus.actualProgress], ["Delay", twinStatus.delay], ["Status", twinStatus.status]].map(([k, v]) => (
+                    <div key={k} className="flex justify-between font-mono text-[11px]">
+                      <span className="text-muted-foreground">{k}</span>
+                      <span className={k === "Status" ? "text-primary" : "text-foreground"}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Road Profile */}
+          {profile.length > 0 && (
+            <div className="bg-card border border-border rounded-lg p-3 md:p-4">
+              <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Road Profile</h2>
+              <RoadProfileChart profile={profile} />
+            </div>
+          )}
+
+        </div>
+
+        <div className="fixed bottom-0 left-[320px] right-0 bg-background border-t border-border p-2 z-50">
+          <Input
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && runCommand()}
+            placeholder="Command (add, save, export...)"
+            className="font-mono text-xs"
+          />
+        </div>
+
+        <div className="text-xs font-mono text-muted-foreground mt-1">
+          Active Layer: {activeLayer}
         </div>
 
         <div className="fixed bottom-0 left-[320px] right-0 bg-background border-t border-border p-2 z-50">
