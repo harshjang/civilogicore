@@ -30,20 +30,21 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route
+                path="/"
                 element={
                   <ProtectedRoute>
                     <AppLayout />
                   </ProtectedRoute>
                 }
               >
-                <Route path="/dashboard" element={<Index />} />
-                <Route path="/survey" element={<SurveyData />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/estimations" element={<Estimations />} />
-                <Route path="/settings" element={<Settings />} />
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<Index />} />
+                <Route path="survey" element={<SurveyData />} />
+                <Route path="chat" element={<Chat />} />
+                <Route path="documents" element={<Documents />} />
+                <Route path="estimations" element={<Estimations />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

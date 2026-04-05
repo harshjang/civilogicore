@@ -102,9 +102,21 @@ export default function SurveyData() {
   const isResizingBottom = useRef(false);
 
   const [command, setCommand] = useState("");
+  const [activeModule, setActiveModule] = useState("Survey");
 
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(
     Object.fromEntries(defaultLayers.map(l => [l, true]))
+  );
+  const ToolbarGroup = ({ label, children }: any) => (
+    <div className="relative group">
+      <div className="px-3 py-2 text-xs font-mono bg-muted rounded-md cursor-pointer hover:bg-muted/70">
+        {label}
+      </div>
+
+      <div className="absolute top-full left-0 mt-2 hidden group-hover:flex flex-col gap-1 bg-card border border-border rounded-md p-2 shadow-xl z-50 min-w-[180px]">
+        {children}
+      </div>
+    </div>
   );
   const [activeLayer, setActiveLayer] = useState("Boundary");
   const runCommand = () => {
@@ -370,7 +382,15 @@ export default function SurveyData() {
   };
 
   const saveAll = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Login required");
+      return;
+    }
+
+    if (points.length === 0) {
+      toast.error("No points to save");
+      return;
+    }
     const newPts = points.filter((p) => p.isNew);
     const dirtyPts = points.filter((p) => p.isDirty && !p.isNew);
 
@@ -409,7 +429,13 @@ export default function SurveyData() {
   };
 
   // Import CSV
-  const handleImportCSV = () => fileInputRef.current?.click();
+  const handleImportCSV = () => {
+    if (!fileInputRef.current) {
+      toast.error("File input not ready");
+      return;
+    }
+    fileInputRef.current.click();
+  };
 
   const processCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -986,6 +1012,24 @@ ${level}
             COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
             {loadedDocName && <span className="text-primary ml-2">· Loaded: {loadedDocName}</span>}
           </p>
+          <div className="flex items-center gap-2 border-b border-border pb-2 mb-4">
+
+            {["Survey", "Terrain", "Road", "Hydrology", "Utilities", "AI"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveModule(tab)}
+                className={`
+        px-4 py-2 text-xs font-mono rounded-md transition
+        ${activeModule === tab
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-muted hover:bg-muted/70 text-muted-foreground"}
+      `}
+              >
+                {tab.toUpperCase()}
+              </button>
+            ))}
+
+          </div>
         </motion.div>
 
         {/* Source & Controls */}
@@ -1011,300 +1055,205 @@ ${level}
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto flex-wrap">
-            <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto sm:ml-auto">
 
-              <Button onClick={undo} disabled={!canUndo}>
-                Undo
-              </Button>
+            {/* EDIT */}
+            <ToolbarGroup label="Edit">
+              <Button onClick={undo} disabled={!canUndo}>Undo</Button>
+              <Button onClick={redo} disabled={!canRedo}>Redo</Button>
+              <Button onClick={addPoint} disabled={!canEdit(role)}>Add Point</Button>
+              <Button onClick={saveAll} disabled={!canEdit(role)}>Save</Button>
+            </ToolbarGroup>
 
-              <Button onClick={redo} disabled={!canRedo}>
-                Redo
-              </Button>
-              <Button
-                onClick={addPoint}
-                disabled={!canEdit(role)}
-                className="glow-cyan"
-              >
-                Add Point
-              </Button>
+            {/* DATA */}
+            <ToolbarGroup label="Data">
+              <Button onClick={handleImportCSV}>Import CSV</Button>
+              <Button onClick={exportDXF}>Export DXF</Button>
+              <Button onClick={() => setSaveDialogOpen(true)}>Save Docs</Button>
+            </ToolbarGroup>
 
-              <div className="text-xs font-mono">
-                Role: {role.toUpperCase()}
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 px-2.5 font-mono text-[11px] gap-1.5">
-                    <Settings2 className="w-3 h-3" />
-                    Tools
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="font-mono text-xs">
-                  <DropdownMenuItem onClick={() => setLiveMode(!liveMode)} className="gap-2">
-                    <Radio className={`w-3.5 h-3.5 ${liveMode ? "text-primary" : ""}`} />
-                    {liveMode ? "Live ON" : "Live OFF"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setEditPlots(!editPlots)} className="gap-2">
-                    <Pencil className={`w-3.5 h-3.5 ${editPlots ? "text-primary" : ""}`} />
-                    {editPlots ? "Editing" : "Edit Plots"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-destructive focus:text-destructive">
-                        <FilePlus className="w-3.5 h-3.5" /> New Plot
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-mono">Start New Plot?</AlertDialogTitle>
-                        <AlertDialogDescription className="font-mono text-xs">
-                          This will permanently delete all current survey points. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="font-mono text-xs">Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="font-mono text-xs" onClick={async () => {
-                          if (!user) return;
-                          const dbPoints = points.filter(p => !p.isNew);
-                          if (dbPoints.length > 0) {
-                            const { error } = await supabase.from("survey_points").delete().eq("user_id", user.id);
-                            if (error) { toast.error("Failed to clear points"); console.error(error); return; }
-                          }
-                          setPoints([]);
-                          toast.success("Ready for new plot entries");
-                        }}>Continue</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="text-xs font-mono">
-              Live Users: {Object.values(presenceState).flat().length}
-            </div>
-            <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={handleImportCSV}>
-              <Upload className="w-3.5 h-3.5" />
-              Import CSV
-            </Button>
-            <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={exportDXF}>
-              <Download className="w-3.5 h-3.5" />
-              Export DXF
-            </Button>
-            <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial" onClick={() => setSaveDialogOpen(true)} disabled={points.length === 0}>
-              <FileText className="w-3.5 h-3.5" />
-              Save to Docs
-            </Button>
-            <Button onClick={saveAll} disabled={!canEdit(role)}>
-              <Save className="w-3.5 h-3.5" />
-              Save
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="font-mono text-xs gap-2 flex-1 sm:flex-initial">
-                  <FilePlus className="w-3.5 h-3.5" />
-                  New Plot
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Start New Plot?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all current survey points. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={async () => {
-                    if (!canEdit(role)) {
-                      toast.error("No permission to create new plot");
-                      return;
-                    }
-                    if (!user) return;
-                    const dbPoints = points.filter(p => !p.isNew);
-                    if (dbPoints.length > 0) {
-                      const { error } = await supabase.from("survey_points").delete().eq("user_id", user.id);
-                      if (error) { toast.error("Failed to clear points"); console.error(error); return; }
-                    }
-                    setPoints([]);
-                    toast.success("Ready for new plot entries");
-                  }}>Continue</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <Button
-              variant={liveMode ? "default" : "outline"}
-              size="sm"
-              className="font-mono text-xs gap-2 flex-1 sm:flex-initial"
-              onClick={() => setLiveMode(!liveMode)}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              {liveMode ? "Live ON" : "Live OFF"}
-            </Button>
-
-            <Button
-              size="sm"
-              variant={editPlots ? "default" : "outline"}
-              className="font-mono text-xs flex-1 sm:flex-initial"
-              onClick={() => setEditPlots(!editPlots)}
-            >
-              Edit Plots
-            </Button>
-
-            <div className="flex gap-2">
+            {/* PROJECT */}
+            <ToolbarGroup label="Project">
               <Select onValueChange={(val) => setProjectId(val || null)}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Project" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Button
-                onClick={() => {
-                  if (!user || !projectId) return;
-                  syncPoints(user.id, projectId);
-                }}
-              >
+              <Button disabled={!projectId} onClick={() => {
+                if (!user) return toast.error("Login required");
+                if (!projectId) return toast.error("Please select a project");
+                syncPoints(user.id, projectId);
+                toast.success("Sync started");
+              }}>
                 Sync Now
               </Button>
-            </div>
+            </ToolbarGroup>
+
+            {/* MODE */}
+            <ToolbarGroup label="Mode">
+              <Button onClick={() => {
+                setLiveMode(!liveMode);
+                toast.success(`Live ${!liveMode ? "enabled" : "disabled"}`);
+              }}>
+                {liveMode ? "Live ON" : "Live OFF"}
+              </Button>
+
+              <Button onClick={() => {
+                setEditPlots(!editPlots);
+                toast.success("Edit mode toggled");
+              }}>
+                Edit Plots
+              </Button>
+            </ToolbarGroup>
+
+            {/* PLOT */}
+            <ToolbarGroup label="Plot">
+              <Button onClick={() => {
+                if (!canEdit(role)) return toast.error("No permission");
+                setPoints([]);
+                toast.success("New plot created");
+              }}>
+                New Plot
+              </Button>
+            </ToolbarGroup>
 
           </div>
         </motion.div>
 
-        <div className="bg-card border border-border rounded-xl p-3 mb-4">
-          <div className="text-xs font-mono text-muted-foreground mb-2">LAYERS</div>
+        {activeModule === "Survey" && (
+          <>
+            <div className="bg-card border border-border rounded-xl p-3 mb-4">
+              <div className="text-xs font-mono text-muted-foreground mb-2">LAYERS</div>
 
-          {defaultLayers.map(layer => (
-            <div key={layer} className="flex justify-between text-xs font-mono">
+              {defaultLayers.map(layer => (
+                <div key={layer} className="flex justify-between text-xs font-mono">
 
-              <span
-                className={`cursor-pointer ${activeLayer === layer ? "text-primary" : ""}`}
-                onClick={() => setActiveLayer(layer)}
-              >
-                {layer}
-              </span>
+                  <span
+                    className={`cursor-pointer ${activeLayer === layer ? "text-primary" : ""}`}
+                    onClick={() => setActiveLayer(layer)}
+                  >
+                    {layer}
+                  </span>
 
-              <input
-                type="checkbox"
-                checked={layerVisibility[layer]}
-                onChange={() =>
-                  setLayerVisibility(prev => ({
-                    ...prev,
-                    [layer]: !prev[layer]
-                  }))
-                }
-              />
+                  <input
+                    type="checkbox"
+                    checked={layerVisibility[layer]}
+                    onChange={() =>
+                      setLayerVisibility(prev => ({
+                        ...prev,
+                        [layer]: !prev[layer]
+                      }))
+                    }
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Data Table */}
-        <motion.div
-          className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan overflow-hidden"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="p-4 md:p-5 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary" />
-              <h2 className="font-mono text-xs md:text-sm font-semibold text-foreground">POINT DATA</h2>
-              <span className="font-mono text-[10px] md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
-            </div>
-            <Button size="sm" onClick={addPoint} className="font-mono text-xs gap-2">
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Add Point</span>
-            </Button>
-          </div>
+            {/* Data Table */}
+            <motion.div
+              className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan overflow-hidden"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="p-4 md:p-5 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-primary" />
+                  <h2 className="font-mono text-xs md:text-sm font-semibold text-foreground">POINT DATA</h2>
+                  <span className="font-mono text-[10px] md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
+                </div>
+                <Button size="sm" onClick={addPoint} className="font-mono text-xs gap-2">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Add Point</span>
+                </Button>
+              </div>
 
-          {loading ? (
-            <div className="p-8 text-center">
-              <p className="font-mono text-sm text-muted-foreground">Loading...</p>
-            </div>
-          ) : points.length === 0 ? (
-            <div className="p-8 md:p-12 flex flex-col items-center justify-center text-center">
-              <MapPin className="w-10 h-10 text-muted-foreground/40 mb-3" />
-              <p className="font-mono text-sm text-muted-foreground">No survey points yet</p>
-              <p className="font-mono text-xs text-muted-foreground/60 mt-1">Add points manually or import a CSV file</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/30">
-                    {["PT #", "EASTING (E)", "NORTHING (N)", "ELEVATION (Z)", "CODE", "LAYER", ""].map((h) => (
-                      <th key={h} className="px-3 md:px-4 py-3 text-left text-[10px] md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {points
-                    .filter(p => layerVisibility[p.layer])
-                    .map((pt) => (
-                      <tr key={pt.id} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
-                        <td className="px-3 md:px-4 py-2">
-                          <Input value={pt.pointNo} onChange={(e) => updatePoint(pt.id, "pointNo", e.target.value)} className="w-14 md:w-16 h-8 font-mono text-xs bg-secondary border-border" />
-                        </td>
-                        <td className="px-3 md:px-4 py-2">
-                          <Input value={pt.easting} onChange={(e) => updatePoint(pt.id, "easting", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
-                        </td>
-                        <td className="px-3 md:px-4 py-2">
-                          <Input value={pt.northing} onChange={(e) => updatePoint(pt.id, "northing", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
-                        </td>
-                        <td className="px-3 md:px-4 py-2">
-                          <Input value={pt.elevation} onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)} className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
-                        </td>
-                        <td className="px-3 md:px-4 py-2">
-                          <Select value={pt.code || undefined} onValueChange={(v) => updatePoint(pt.id, "code", v)}>
-                            <SelectTrigger className="w-20 md:w-24 h-8 font-mono text-xs bg-secondary border-border">
-                              <SelectValue placeholder="Code" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {defaultCodes.map((c) => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-3 md:px-4 py-2">
-                          <Select value={pt.layer} onValueChange={(v) => updatePoint(pt.id, "layer", v)}>
-                            <SelectTrigger className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {defaultLayers.map((l) => (
-                                <SelectItem key={l} value={l}>{l}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-3 md:px-4 py-2">
-                          <button onClick={() => removePoint(pt.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
+              {loading ? (
+                <div className="p-8 text-center">
+                  <p className="font-mono text-sm text-muted-foreground">Loading...</p>
+                </div>
+              ) : points.length === 0 ? (
+                <div className="p-8 md:p-12 flex flex-col items-center justify-center text-center">
+                  <MapPin className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                  <p className="font-mono text-sm text-muted-foreground">No survey points yet</p>
+                  <p className="font-mono text-xs text-muted-foreground/60 mt-1">Add points manually or import a CSV file</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px]">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/30">
+                        {["PT #", "EASTING (E)", "NORTHING (N)", "ELEVATION (Z)", "CODE", "LAYER", ""].map((h) => (
+                          <th key={h} className="px-3 md:px-4 py-3 text-left text-[10px] md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
+                            {h}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </motion.div>
+                    </thead>
+                    <tbody>
+                      {points
+                        .filter(p => layerVisibility[p.layer])
+                        .map((pt) => (
+                          <tr key={pt.id} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
+                            <td className="px-3 md:px-4 py-2">
+                              <Input value={pt.pointNo} onChange={(e) => updatePoint(pt.id, "pointNo", e.target.value)} className="w-14 md:w-16 h-8 font-mono text-xs bg-secondary border-border" />
+                            </td>
+                            <td className="px-3 md:px-4 py-2">
+                              <Input value={pt.easting} onChange={(e) => updatePoint(pt.id, "easting", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
+                            </td>
+                            <td className="px-3 md:px-4 py-2">
+                              <Input value={pt.northing} onChange={(e) => updatePoint(pt.id, "northing", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
+                            </td>
+                            <td className="px-3 md:px-4 py-2">
+                              <Input value={pt.elevation} onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)} className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
+                            </td>
+                            <td className="px-3 md:px-4 py-2">
+                              <Select value={pt.code || undefined} onValueChange={(v) => updatePoint(pt.id, "code", v)}>
+                                <SelectTrigger className="w-20 md:w-24 h-8 font-mono text-xs bg-secondary border-border">
+                                  <SelectValue placeholder="Code" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {defaultCodes.map((c) => (
+                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="px-3 md:px-4 py-2">
+                              <Select value={pt.layer} onValueChange={(v) => updatePoint(pt.id, "layer", v)}>
+                                <SelectTrigger className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {defaultLayers.map((l) => (
+                                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="px-3 md:px-4 py-2">
+                              <button onClick={() => removePoint(pt.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
 
         {/* Terrain Viewer */}
-        {points.length > 2 && (
+        {activeModule === "Terrain" && points.length > 2 && (
           <div className="h-[70vh] bg-black border border-border rounded-xl overflow-hidden flex flex-col">
 
             <div className="px-3 py-2 text-xs font-mono text-muted-foreground border-b border-border">
@@ -1368,7 +1317,7 @@ ${level}
 
         )}
 
-        {estimate && (
+        {activeModule === "AI" && estimate && (
 
           <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5">
 
@@ -1399,7 +1348,7 @@ ${level}
           </div>
 
         )}
-        {twinStatus && (
+        {activeModule === "AI" && twinStatus && (
 
           <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5">
 
@@ -1456,7 +1405,7 @@ ${level}
                 Version {index + 1}
               </div>
             ))}
-            {estimate && (
+            {activeModule === "AI" && twinStatus && (
               <div className="bg-card rounded-lg border border-border p-3">
                 <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">AI Construction Estimate</h3>
                 <div className="space-y-1">
@@ -1473,7 +1422,7 @@ ${level}
                 </div>
               </div>
             )}
-            {twinStatus && (
+            {activeModule === "AI" && twinStatus && (
               <div className="bg-card rounded-lg border border-border p-3">
                 <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Digital Twin</h3>
                 <div className="space-y-1">
@@ -1489,7 +1438,7 @@ ${level}
           </div>
 
           {/* Road Profile */}
-          {profile.length > 0 && (
+          {activeModule === "Road" && profile.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-3 md:p-4">
               <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Road Profile</h2>
               <RoadProfileChart profile={profile} />
@@ -1512,18 +1461,6 @@ ${level}
           Active Layer: {activeLayer}
         </div>
 
-        <div className="fixed bottom-0 left-[320px] right-0 bg-background border-t border-border p-2 z-50">
-          <Input
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runCommand()}
-            placeholder="Command (add, save, export...)"
-            className="font-mono text-xs"
-          />
-        </div>
-        <div className="text-xs font-mono text-muted-foreground mt-1">
-          Active Layer: {activeLayer}
-        </div>
       </div>
     </div >
   );
