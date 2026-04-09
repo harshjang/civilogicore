@@ -108,55 +108,6 @@ export default function SurveyData() {
     Object.fromEntries(defaultLayers.map(l => [l, true]))
   );
 
-  const ToolbarGroup = ({ label, children }: any) => {
-    const [open, setOpen] = useState(false);
-    const [locked, setLocked] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    // Close on outside click
-    useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (ref.current && !ref.current.contains(e.target as Node)) {
-          setOpen(false);
-          setLocked(false);
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    return (
-      <div
-        ref={ref}
-        className="relative"
-        onMouseEnter={() => {
-          if (!locked) setOpen(true);
-        }}
-        onMouseLeave={() => {
-          if (!locked) setOpen(false);
-        }}
-      >
-        {/* Trigger */}
-        <div
-          onClick={() => {
-            setOpen(true);
-            setLocked((prev) => !prev);
-          }}
-          className="px-3 py-2 text-xs font-mono bg-muted rounded-md cursor-pointer hover:bg-muted/70"
-        >
-          {label}
-        </div>
-
-        {/* Dropdown */}
-        {open && (
-          <div className="absolute top-full left-0 mt-1 flex flex-col gap-1 bg-card border border-border rounded-md p-2 shadow-xl z-50 min-w-[180px]">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
   const [activeLayer, setActiveLayer] = useState("Boundary");
   const runCommand = () => {
     const cmd = command.toLowerCase();
