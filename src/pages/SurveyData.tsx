@@ -1160,19 +1160,20 @@ ${level}
 
           <div className="flex flex-wrap gap-3 w-full sm:w-auto sm:ml-auto">
 
-            {/* EDIT */}
-            <ToolbarGroup label="Edit">
-              <Button onClick={undo} disabled={!canUndo}>Undo</Button>
-              <Button onClick={redo} disabled={!canRedo}>Redo</Button>
-              <Button onClick={addPoint} disabled={!canEdit(role)}>Add Point</Button>
-              <Button onClick={saveAll} disabled={!canEdit(role)}>Save</Button>
-              <div className="text-xs font-mono">
+            <div className="text-xs font-mono">
   {hasUnsavedChanges ? (
     <span className="text-yellow-500">● Unsaved</span>
   ) : (
     <span className="text-green-500">● Saved</span>
   )}
 </div>
+
+            {/* EDIT */}
+            <ToolbarGroup label="Edit">
+              <Button onClick={undo} disabled={!canUndo}>Undo</Button>
+              <Button onClick={redo} disabled={!canRedo}>Redo</Button>
+              <Button onClick={addPoint} disabled={!canEdit(role)}>Add Point</Button>
+              <Button onClick={saveAll} disabled={!canEdit(role)}>Save</Button>
             </ToolbarGroup>
 
             {/* DATA */}
