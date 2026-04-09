@@ -1,7 +1,7 @@
 import { savePointsLocal } from "@/lib/offline/saveLocal";
 import { loadPointsLocal } from "@/lib/offline/loadLocal";
 import { syncPoints } from "@/lib/offline/sync";
-import WorkspaceToolbar from "@/components/ui/WorkspaceToolbar";
+
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateAlignment } from "@/lib/road/alignment";
 import { generateVerticalProfile } from "@/lib/road/verticalProfile";
@@ -1547,9 +1547,6 @@ ${level}
           />
         </div>
 
-        <div className="text-xs font-mono text-muted-foreground mt-1">
-          Active Layer: {activeLayer}
-        </div>
 
       </div>
     </div >
