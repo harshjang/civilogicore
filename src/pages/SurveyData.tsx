@@ -1212,33 +1212,6 @@ ${level}
 
         {activeModule === "Survey" && (
           <>
-            <div className="bg-card border border-border rounded-xl p-3 mb-4">
-              <div className="text-xs font-mono text-muted-foreground mb-2">LAYERS</div>
-
-              {defaultLayers.map(layer => (
-                <div key={layer} className="flex justify-between text-xs font-mono">
-
-                  <span
-                    className={`cursor-pointer ${activeLayer === layer ? "text-primary" : ""}`}
-                    onClick={() => setActiveLayer(layer)}
-                  >
-                    {layer}
-                  </span>
-
-                  <input
-                    type="checkbox"
-                    checked={layerVisibility[layer]}
-                    onChange={() =>
-                      setLayerVisibility(prev => ({
-                        ...prev,
-                        [layer]: !prev[layer]
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-
             {/* Data Table */}
             <motion.div
               className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan overflow-hidden"
@@ -1457,36 +1430,13 @@ ${level}
           />
         )}
 
-        <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-3">
-
-          <h3 className="font-mono text-xs mb-2">
-            Version History
-          </h3>
-
-          <div className="max-h-40 overflow-y-auto text-xs font-mono space-y-1">
-
-            {history.map((_, index) => (
-              <div
-                key={index}
-                className="cursor-pointer hover:text-primary"
-                onClick={() => {
-                  setPoints([...history[index]]);
-                }}
-              >
-                Version {index + 1}
-              </div>
-            ))}
+        {/* Road Profile */}
+        {activeModule === "Road" && profile.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-3 md:p-4">
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Road Profile</h2>
+            <RoadProfileChart profile={profile} />
           </div>
-
-          {/* Road Profile */}
-          {activeModule === "Road" && profile.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-3 md:p-4">
-              <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Road Profile</h2>
-              <RoadProfileChart profile={profile} />
-            </div>
-          )}
-
-        </div>
+        )}
 
         <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-background border-t border-border p-2 z-50">
           <Input
