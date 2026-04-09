@@ -1,7 +1,6 @@
 import { savePointsLocal } from "@/lib/offline/saveLocal";
 import { loadPointsLocal } from "@/lib/offline/loadLocal";
 import { syncPoints } from "@/lib/offline/sync";
-import WorkspaceSidebar from "@/components/ui/WorkspaceSidebar";
 import WorkspaceToolbar from "@/components/ui/WorkspaceToolbar";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateAlignment } from "@/lib/road/alignment";
@@ -100,6 +99,7 @@ export default function SurveyData() {
   const [bottomHeight, setBottomHeight] = useState(120);
   const isResizingLeft = useRef(false);
   const isResizingBottom = useRef(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [command, setCommand] = useState("");
   const [activeModule, setActiveModule] = useState("Survey");
@@ -107,17 +107,56 @@ export default function SurveyData() {
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(
     Object.fromEntries(defaultLayers.map(l => [l, true]))
   );
-  const ToolbarGroup = ({ label, children }: any) => (
-    <div className="relative group">
-      <div className="px-3 py-2 text-xs font-mono bg-muted rounded-md cursor-pointer hover:bg-muted/70">
-        {label}
-      </div>
 
-      <div className="absolute top-full left-0 mt-2 hidden group-hover:flex flex-col gap-1 bg-card border border-border rounded-md p-2 shadow-xl z-50 min-w-[180px]">
-        {children}
+  const ToolbarGroup = ({ label, children }: any) => {
+    const [open, setOpen] = useState(false);
+    const [locked, setLocked] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    // Close on outside click
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (ref.current && !ref.current.contains(e.target as Node)) {
+          setOpen(false);
+          setLocked(false);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+      <div
+        ref={ref}
+        className="relative"
+        onMouseEnter={() => {
+          if (!locked) setOpen(true);
+        }}
+        onMouseLeave={() => {
+          if (!locked) setOpen(false);
+        }}
+      >
+        {/* Trigger */}
+        <div
+          onClick={() => {
+            setOpen(true);
+            setLocked((prev) => !prev);
+          }}
+          className="px-3 py-2 text-xs font-mono bg-muted rounded-md cursor-pointer hover:bg-muted/70"
+        >
+          {label}
+        </div>
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute top-full left-0 mt-1 flex flex-col gap-1 bg-card border border-border rounded-md p-2 shadow-xl z-50 min-w-[180px]">
+            {children}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
   const [activeLayer, setActiveLayer] = useState("Boundary");
   const runCommand = () => {
     const cmd = command.toLowerCase();
@@ -205,6 +244,18 @@ export default function SurveyData() {
       window.removeEventListener("online", handleOnline);
     };
   }, [user, projectId]);
+
+  useEffect(() => {
+  const handler = (e: BeforeUnloadEvent) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  };
+
+  window.addEventListener("beforeunload", handler);
+  return () => window.removeEventListener("beforeunload", handler);
+}, [hasUnsavedChanges]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -481,6 +532,34 @@ export default function SurveyData() {
     toast.success(`Area = ${area.toFixed(2)} sq.m`)
 
   }, [points])
+
+  useEffect(() => {
+  const dirty = points.some(p => p.isNew || p.isDirty);
+  setHasUnsavedChanges(dirty);
+}, [points]);
+
+useEffect(() => {
+  if (!hasUnsavedChanges) return;
+
+  const timer = setTimeout(async () => {
+    try {
+      // 1. Save locally first (offline safety)
+      savePointsLocal(points);
+
+      // 2. Save to DB if online
+      if (user) {
+        await saveAll(); // your existing function
+      }
+
+      toast.success("Auto-saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Auto-save failed");
+    }
+  }, 2000); // 2 sec debounce
+
+  return () => clearTimeout(timer);
+}, [points]);
 
   useEffect(() => {
 
@@ -988,20 +1067,6 @@ ${level}
 
     <div className="flex h-screen overflow-hidden">
 
-      {/* LEFT PANEL */}
-      <div
-        style={{ width: leftWidth }}
-        className="relative bg-card border-r border-border flex flex-col"
-      >
-        <WorkspaceSidebar />
-
-        {/* RESIZER */}
-        <div
-          onMouseDown={() => (isResizingLeft.current = true)}
-          className="absolute right-0 top-0 w-1 h-full cursor-col-resize bg-border hover:bg-primary/30 z-50"
-        />
-      </div>
-
       <div className="flex-1 relative overflow-auto p-4 md:p-8 space-y-6 pt-14 md:pt-8">
         <WorkspaceToolbar />
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
@@ -1019,10 +1084,10 @@ ${level}
                 key={tab}
                 onClick={() => setActiveModule(tab)}
                 className={`
-        px-4 py-2 text-xs font-mono rounded-md transition
+        px-4 py-2 text-xs font-mono rounded-md transition-all
         ${activeModule === tab
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-muted hover:bg-muted/70 text-muted-foreground"}
+                    ? "bg-primary text-primary-foreground glow-cyan"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70"}
       `}
               >
                 {tab.toUpperCase()}
@@ -1254,67 +1319,54 @@ ${level}
 
         {/* Terrain Viewer */}
         {activeModule === "Terrain" && points.length > 2 && (
-          <div className="h-[70vh] bg-black border border-border rounded-xl overflow-hidden flex flex-col">
+          <>
+            <div className="h-[70vh] bg-black border border-border rounded-xl overflow-hidden flex flex-col">
 
-            <div className="px-3 py-2 text-xs font-mono text-muted-foreground border-b border-border">
-              3D TERRAIN VIEW
+              <div className="px-3 py-2 text-xs font-mono text-muted-foreground border-b border-border">
+                3D TERRAIN VIEW
+              </div>
+
+              <div className="flex-1">
+                <Suspense fallback={<div className="text-xs font-mono p-2">Loading 3D...</div>}>
+                  <TerrainViewer
+                    points={points}
+                    alignment={alignment}
+                    sections={sections}
+                    corridor={corridor}
+                    verticalProfile={verticalProfile}
+                    drawMode={drawMode}
+                    setAlignment={setAlignment}
+                    setDrawMode={setDrawMode}
+                    setEarthwork={setEarthwork}
+                    editPlots={editPlots}
+                    setEstimate={setEstimate}
+                    simulation={simulation}
+                    setTwinStatus={setTwinStatus}
+                  />
+                </Suspense>
+              </div>
+
             </div>
+            {earthwork && (
+              <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5">
+                <h2 className="text-sm font-semibold text-foreground tracking-wide mb-3">
+                  Earthwork Volume
+                </h2>
 
-            <div className="flex-1">
-              <Suspense fallback={<div className="text-xs font-mono p-2">Loading 3D...</div>}>
-                <TerrainViewer
-                  points={points}
-                  alignment={alignment}
-                  sections={sections}
-                  corridor={corridor}
-                  verticalProfile={verticalProfile}
-                  drawMode={drawMode}
-                  setAlignment={setAlignment}
-                  setDrawMode={setDrawMode}
-                  setEarthwork={setEarthwork}
-                  editPlots={editPlots}
-                  setEstimate={setEstimate}
-                  simulation={simulation}
-                  setTwinStatus={setTwinStatus}
-                />
-              </Suspense>
-            </div>
+                <p className="font-mono text-xs">
+                  Cut: {earthwork.cut.toFixed(2)} m³
+                </p>
 
-          </div>
-        )}
+                <p className="font-mono text-xs">
+                  Fill: {earthwork.fill.toFixed(2)} m³
+                </p>
 
-        {earthwork && (
-          <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5">
-            <h2 className="text-sm font-semibold text-foreground tracking-wide mb-3">
-              Earthwork Volume
-            </h2>
-
-            <p className="font-mono text-xs">
-              Cut: {earthwork.cut.toFixed(2)} m³
-            </p>
-
-            <p className="font-mono text-xs">
-              Fill: {earthwork.fill.toFixed(2)} m³
-            </p>
-
-            <p className="font-mono text-xs">
-              Net: {earthwork.net.toFixed(2)} m³
-            </p>
-          </div>
-        )}
-
-        {profile.length > 0 && (
-
-          <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5">
-
-            <h2 className="text-sm font-semibold text-foreground tracking-wide mb-3">
-              Road Profile
-            </h2>
-
-            <RoadProfileChart profile={profile} />
-
-          </div>
-
+                <p className="font-mono text-xs">
+                  Net: {earthwork.net.toFixed(2)} m³
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {activeModule === "AI" && estimate && (
@@ -1405,36 +1457,6 @@ ${level}
                 Version {index + 1}
               </div>
             ))}
-            {activeModule === "AI" && twinStatus && (
-              <div className="bg-card rounded-lg border border-border p-3">
-                <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">AI Construction Estimate</h3>
-                <div className="space-y-1">
-                  {[["Road", `${estimate.roadLength.toFixed(2)} m`], ["Building", `${estimate.buildingArea.toFixed(2)} m²`], ["Water", `${estimate.waterLength.toFixed(2)} m`], ["Sewer", `${estimate.sewerLength.toFixed(2)} m`]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between font-mono text-[11px]">
-                      <span className="text-muted-foreground">{k}</span>
-                      <span className="text-foreground">{v}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-mono text-[11px] pt-1 border-t border-border">
-                    <span className="text-muted-foreground font-semibold">Total</span>
-                    <span className="text-primary font-semibold">${estimate.totalCost.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            {activeModule === "AI" && twinStatus && (
-              <div className="bg-card rounded-lg border border-border p-3">
-                <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Digital Twin</h3>
-                <div className="space-y-1">
-                  {[["Planned", twinStatus.plannedProgress], ["Completed", twinStatus.actualProgress], ["Delay", twinStatus.delay], ["Status", twinStatus.status]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between font-mono text-[11px]">
-                      <span className="text-muted-foreground">{k}</span>
-                      <span className={k === "Status" ? "text-primary" : "text-foreground"}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Road Profile */}
@@ -1447,7 +1469,7 @@ ${level}
 
         </div>
 
-        <div className="fixed bottom-0 left-[320px] right-0 bg-background border-t border-border p-2 z-50">
+        <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-background border-t border-border p-2 z-50">
           <Input
             value={command}
             onChange={(e) => setCommand(e.target.value)}
