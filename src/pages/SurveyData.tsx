@@ -232,18 +232,16 @@ export default function SurveyData() {
   }, []);
 
   useEffect(() => {
-    const handleOnline = () => {
-      if (!user || !projectId) return;
-      console.log("Back online → syncing...");
+  const handleOnline = () => {
+    if (user && projectId) {
       syncPoints(user.id, projectId);
-    };
+      toast.success("Synced with server");
+    }
+  };
 
-    window.addEventListener("online", handleOnline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-    };
-  }, [user, projectId]);
+  window.addEventListener("online", handleOnline);
+  return () => window.removeEventListener("online", handleOnline);
+}, [user, projectId]);
 
   useEffect(() => {
   const handler = (e: BeforeUnloadEvent) => {
@@ -256,6 +254,34 @@ export default function SurveyData() {
   window.addEventListener("beforeunload", handler);
   return () => window.removeEventListener("beforeunload", handler);
 }, [hasUnsavedChanges]);
+
+useEffect(() => {
+  const dirty = points.some(p => p.isNew || p.isDirty);
+  setHasUnsavedChanges(dirty);
+}, [points]);
+
+useEffect(() => {
+  if (!hasUnsavedChanges) return;
+
+  const timer = setTimeout(async () => {
+    try {
+      // 1. Save locally first (offline safety)
+      savePointsLocal(points);
+
+      // 2. Save to DB if online
+      if (user) {
+        await saveAll(); // your existing function
+      }
+
+      toast.success("Auto-saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Auto-save failed");
+    }
+  }, 2000); // 2 sec debounce
+
+  return () => clearTimeout(timer);
+}, [points]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -716,6 +742,18 @@ useEffect(() => {
     loadRole();
   }, [user, projectId]);
 
+  useEffect(() => {
+  const handler = (e: BeforeUnloadEvent) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  };
+
+  window.addEventListener("beforeunload", handler);
+  return () => window.removeEventListener("beforeunload", handler);
+}, [hasUnsavedChanges]);
+
   // Export DXF
   const contourInterval = 1; // meters
   const exportDXF = () => {
@@ -1128,6 +1166,13 @@ ${level}
               <Button onClick={redo} disabled={!canRedo}>Redo</Button>
               <Button onClick={addPoint} disabled={!canEdit(role)}>Add Point</Button>
               <Button onClick={saveAll} disabled={!canEdit(role)}>Save</Button>
+              <div className="text-xs font-mono">
+  {hasUnsavedChanges ? (
+    <span className="text-yellow-500">● Unsaved</span>
+  ) : (
+    <span className="text-green-500">● Saved</span>
+  )}
+</div>
             </ToolbarGroup>
 
             {/* DATA */}
