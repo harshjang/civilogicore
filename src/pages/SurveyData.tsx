@@ -1,7 +1,7 @@
 import { savePointsLocal } from "@/lib/offline/saveLocal";
 import { loadPointsLocal } from "@/lib/offline/loadLocal";
 import { syncPoints } from "@/lib/offline/sync";
-import WorkspaceToolbar from "@/components/ui/WorkspaceToolbar";
+
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateAlignment } from "@/lib/road/alignment";
 import { generateVerticalProfile } from "@/lib/road/verticalProfile";
@@ -108,55 +108,6 @@ export default function SurveyData() {
     Object.fromEntries(defaultLayers.map(l => [l, true]))
   );
 
-  const ToolbarGroup = ({ label, children }: any) => {
-    const [open, setOpen] = useState(false);
-    const [locked, setLocked] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    // Close on outside click
-    useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (ref.current && !ref.current.contains(e.target as Node)) {
-          setOpen(false);
-          setLocked(false);
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    return (
-      <div
-        ref={ref}
-        className="relative"
-        onMouseEnter={() => {
-          if (!locked) setOpen(true);
-        }}
-        onMouseLeave={() => {
-          if (!locked) setOpen(false);
-        }}
-      >
-        {/* Trigger */}
-        <div
-          onClick={() => {
-            setOpen(true);
-            setLocked((prev) => !prev);
-          }}
-          className="px-3 py-2 text-xs font-mono bg-muted rounded-md cursor-pointer hover:bg-muted/70"
-        >
-          {label}
-        </div>
-
-        {/* Dropdown */}
-        {open && (
-          <div className="absolute top-full left-0 mt-1 flex flex-col gap-1 bg-card border border-border rounded-md p-2 shadow-xl z-50 min-w-[180px]">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
   const [activeLayer, setActiveLayer] = useState("Boundary");
   const runCommand = () => {
     const cmd = command.toLowerCase();
@@ -1102,139 +1053,161 @@ ${level}
     toast.success("DXF file exported!");
   };
   return (
-
     <div className="flex h-screen overflow-hidden">
-
-      <div className="flex-1 relative overflow-auto p-4 md:p-8 space-y-6 pt-14 md:pt-8">
-        <WorkspaceToolbar />
+      <div className="flex-1 relative overflow-auto p-3 md:p-6 space-y-3 pt-14 md:pt-6">
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
 
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-xl md:text-2xl font-mono font-bold text-foreground">Survey Data</h1>
-          <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">
-            COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
-            {loadedDocName && <span className="text-primary ml-2">· Loaded: {loadedDocName}</span>}
-          </p>
-          <div className="flex items-center gap-2 border-b border-border pb-2 mb-4">
-
-            {["Survey", "Terrain", "Road", "Hydrology", "Utilities", "AI"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveModule(tab)}
-                className={`
-        px-4 py-2 text-xs font-mono rounded-md transition-all
-        ${activeModule === tab
-                    ? "bg-primary text-primary-foreground glow-cyan"
-                    : "bg-muted text-muted-foreground hover:bg-muted/70"}
-      `}
-              >
-                {tab.toUpperCase()}
-              </button>
-            ))}
-
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg md:text-xl font-mono font-bold text-foreground tracking-wider">
+              Survey Data
+            </h1>
+            <p className="text-[10px] md:text-xs text-muted-foreground font-mono mt-0.5 tracking-wide">
+              COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
+              {loadedDocName && <span className="text-primary ml-2">· {loadedDocName}</span>}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-[10px] font-mono">
+              {hasUnsavedChanges ? (
+                <span className="text-yellow-500">● Unsaved</span>
+              ) : (
+                <span className="text-green-500">● Saved</span>
+              )}
+            </div>
+            <span className="text-[10px] font-mono text-muted-foreground">Layer: {activeLayer}</span>
           </div>
         </motion.div>
 
-        {/* Source & Controls */}
+        {/* Module Tabs */}
+        <div className="flex items-center gap-1.5 border-b border-border pb-2">
+          {["Survey", "Terrain", "Road", "Hydrology", "Utilities", "AI"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveModule(tab)}
+              className={`px-3 py-1.5 text-[10px] font-mono rounded-md transition-all ${
+                activeModule === tab
+                  ? "bg-primary text-primary-foreground shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
+              }`}
+            >
+              {tab.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Toolbar — compact row of dropdown groups + source selector */}
         <motion.div
-          className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 md:gap-4"
-          initial={{ opacity: 0, y: 10 }}
+          className="flex flex-wrap items-center gap-1.5"
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
         >
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            <span className="font-mono text-xs text-muted-foreground uppercase">Source:</span>
+          {/* Source */}
+          <div className="flex items-center gap-1.5 mr-1">
+            <MapPin className="w-3 h-3 text-primary" />
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger className="w-32 h-7 font-mono text-[10px] bg-secondary border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="total-station">Total Station</SelectItem>
+                <SelectItem value="dgps">DGPS</SelectItem>
+                <SelectItem value="drone">Survey Drone</SelectItem>
+                <SelectItem value="manual">Manual Entry</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={source} onValueChange={setSource}>
-            <SelectTrigger className="w-full sm:w-48 font-mono text-sm bg-secondary border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="total-station">Total Station</SelectItem>
-              <SelectItem value="dgps">DGPS</SelectItem>
-              <SelectItem value="drone">Survey Drone</SelectItem>
-              <SelectItem value="manual">Manual Entry</SelectItem>
-            </SelectContent>
-          </Select>
 
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto sm:ml-auto">
+          <div className="w-px h-5 bg-border" />
 
-            <div className="text-xs font-mono">
-  {hasUnsavedChanges ? (
-    <span className="text-yellow-500">● Unsaved</span>
-  ) : (
-    <span className="text-green-500">● Saved</span>
-  )}
-</div>
+          {/* Edit dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+                <Pencil className="w-3 h-3" /> Edit <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs">
+              <DropdownMenuItem onClick={undo} disabled={!canUndo}>Undo</DropdownMenuItem>
+              <DropdownMenuItem onClick={redo} disabled={!canRedo}>Redo</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={addPoint} disabled={!canEdit(role)}>Add Point</DropdownMenuItem>
+              <DropdownMenuItem onClick={saveAll} disabled={!canEdit(role)}>Save All</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* EDIT */}
-            <ToolbarGroup label="Edit">
-              <Button onClick={undo} disabled={!canUndo}>Undo</Button>
-              <Button onClick={redo} disabled={!canRedo}>Redo</Button>
-              <Button onClick={addPoint} disabled={!canEdit(role)}>Add Point</Button>
-              <Button onClick={saveAll} disabled={!canEdit(role)}>Save</Button>
-            </ToolbarGroup>
+          {/* Data dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+                <FileText className="w-3 h-3" /> Data <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs">
+              <DropdownMenuItem onClick={handleImportCSV}>Import CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportDXF}>Export DXF</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSaveDialogOpen(true)}>Save to Documents</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* DATA */}
-            <ToolbarGroup label="Data">
-              <Button onClick={handleImportCSV}>Import CSV</Button>
-              <Button onClick={exportDXF}>Export DXF</Button>
-              <Button onClick={() => setSaveDialogOpen(true)}>Save Docs</Button>
-            </ToolbarGroup>
+          {/* Mode dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+                <Settings2 className="w-3 h-3" /> Mode <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs">
+              <DropdownMenuItem onClick={() => { setLiveMode(!liveMode); toast.success(`Live ${!liveMode ? "enabled" : "disabled"}`); }}>
+                {liveMode ? "● Live ON" : "○ Live OFF"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setEditPlots(!editPlots); toast.success("Edit mode toggled"); }}>
+                {editPlots ? "● Edit Plots ON" : "○ Edit Plots OFF"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* PROJECT */}
-            <ToolbarGroup label="Project">
-              <Select onValueChange={(val) => setProjectId(val || null)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button disabled={!projectId} onClick={() => {
+          {/* Project dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+                <Layers className="w-3 h-3" /> Project <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs min-w-[200px]">
+              <div className="p-2">
+                <Select onValueChange={(val) => setProjectId(val || null)}>
+                  <SelectTrigger className="w-full h-7 font-mono text-[10px]">
+                    <SelectValue placeholder="Select Project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={!projectId} onClick={() => {
                 if (!user) return toast.error("Login required");
-                if (!projectId) return toast.error("Please select a project");
+                if (!projectId) return toast.error("Select a project");
                 syncPoints(user.id, projectId);
                 toast.success("Sync started");
               }}>
                 Sync Now
-              </Button>
-            </ToolbarGroup>
-
-            {/* MODE */}
-            <ToolbarGroup label="Mode">
-              <Button onClick={() => {
-                setLiveMode(!liveMode);
-                toast.success(`Live ${!liveMode ? "enabled" : "disabled"}`);
-              }}>
-                {liveMode ? "Live ON" : "Live OFF"}
-              </Button>
-
-              <Button onClick={() => {
-                setEditPlots(!editPlots);
-                toast.success("Edit mode toggled");
-              }}>
-                Edit Plots
-              </Button>
-            </ToolbarGroup>
-
-            {/* PLOT */}
-            <ToolbarGroup label="Plot">
-              <Button onClick={() => {
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
                 if (!canEdit(role)) return toast.error("No permission");
                 setPoints([]);
                 toast.success("New plot created");
               }}>
                 New Plot
-              </Button>
-            </ToolbarGroup>
-
-          </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </motion.div>
 
         {activeModule === "Survey" && (
@@ -1525,9 +1498,6 @@ ${level}
           />
         </div>
 
-        <div className="text-xs font-mono text-muted-foreground mt-1">
-          Active Layer: {activeLayer}
-        </div>
 
       </div>
     </div >
