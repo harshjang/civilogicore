@@ -1117,22 +1117,6 @@ ${level}
 
           <div className="w-px h-5 bg-border" />
 
-          {/* Edit dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
-                <Pencil className="w-3 h-3" /> Edit <ChevronDown className="w-2.5 h-2.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="font-mono text-xs">
-              <DropdownMenuItem onClick={undo} disabled={!canUndo}>Undo</DropdownMenuItem>
-              <DropdownMenuItem onClick={redo} disabled={!canRedo}>Redo</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={addPoint} disabled={!canEdit(role)}>Add Point</DropdownMenuItem>
-              <DropdownMenuItem onClick={saveAll} disabled={!canEdit(role)}>Save All</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {/* Data dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1194,13 +1178,44 @@ ${level}
               }}>
                 Sync Now
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                if (!canEdit(role)) return toast.error("No permission");
-                setPoints([]);
-                toast.success("New plot created");
-              }}>
-                New Plot
-              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="w-px h-5 bg-border" />
+
+          {/* Undo / Redo / Clear */}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo} title="Undo">
+            <Undo2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={!canRedo} title="Redo">
+            <Redo2 className="w-3.5 h-3.5" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1" disabled={!canEdit(role)}>
+                <XCircle className="w-3 h-3" /> Clear
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear all points?</AlertDialogTitle>
+                <AlertDialogDescription>This will remove all survey points from the workspace. This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { setPoints([]); toast.success("All points cleared"); }}>Clear</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Spacer + Saved status */}
+          <div className="flex-1" />
+          <div className="text-xs font-mono">
+            {hasUnsavedChanges ? (
+              <span className="text-destructive">● Unsaved</span>
+            ) : (
+              <span className="text-primary">● Saved</span>
+            )}
             </DropdownMenuContent>
           </DropdownMenu>
         </motion.div>
