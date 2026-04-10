@@ -145,26 +145,13 @@ export default function SurveyData() {
   }, []);
 
   useEffect(() => {
-    if (points.length === 0) return;
-
-    const timer = setTimeout(() => {
-      savePointsLocal(points);
-      console.log("Auto-saved locally");
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [points]);
-
-  useEffect(() => {
     const loadOffline = async () => {
       const local = await loadPointsLocal();
-
       if (local.length > 0) {
         setPoints(local);
         console.log("Loaded offline data");
       }
     };
-
     loadOffline();
   }, []);
 
