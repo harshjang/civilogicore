@@ -1063,20 +1063,20 @@ ${level}
             <h1 className="text-lg md:text-xl font-mono font-bold text-foreground tracking-wider">
               Survey Data
             </h1>
-            <p className="text-[10px] md:text-xs text-muted-foreground font-mono mt-0.5 tracking-wide">
+            <p className="text-xs md:text-xs text-muted-foreground font-mono mt-0.5 tracking-wide">
               COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
               {loadedDocName && <span className="text-primary ml-2">· {loadedDocName}</span>}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-[10px] font-mono">
+            <div className="text-xs font-mono">
               {hasUnsavedChanges ? (
                 <span className="text-yellow-500">● Unsaved</span>
               ) : (
                 <span className="text-green-500">● Saved</span>
               )}
             </div>
-            <span className="text-[10px] font-mono text-muted-foreground">Layer: {activeLayer}</span>
+            <span className="text-xs font-mono text-muted-foreground">Layer: {activeLayer}</span>
           </div>
         </motion.div>
 
@@ -1086,7 +1086,7 @@ ${level}
             <button
               key={tab}
               onClick={() => setActiveModule(tab)}
-              className={`px-3 py-1.5 text-[10px] font-mono rounded-md transition-all ${
+              className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all ${
                 activeModule === tab
                   ? "bg-primary text-primary-foreground shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
                   : "bg-muted text-muted-foreground hover:bg-muted/70"
@@ -1108,7 +1108,7 @@ ${level}
           <div className="flex items-center gap-1.5 mr-1">
             <MapPin className="w-3 h-3 text-primary" />
             <Select value={source} onValueChange={setSource}>
-              <SelectTrigger className="w-32 h-7 font-mono text-[10px] bg-secondary border-border">
+              <SelectTrigger className="w-32 h-7 font-mono text-xs bg-secondary border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1125,7 +1125,7 @@ ${level}
           {/* Edit dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
                 <Pencil className="w-3 h-3" /> Edit <ChevronDown className="w-2.5 h-2.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -1141,7 +1141,7 @@ ${level}
           {/* Data dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
                 <FileText className="w-3 h-3" /> Data <ChevronDown className="w-2.5 h-2.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -1156,7 +1156,7 @@ ${level}
           {/* Mode dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
                 <Settings2 className="w-3 h-3" /> Mode <ChevronDown className="w-2.5 h-2.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -1173,14 +1173,14 @@ ${level}
           {/* Project dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1">
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
                 <Layers className="w-3 h-3" /> Project <ChevronDown className="w-2.5 h-2.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="font-mono text-xs min-w-[200px]">
               <div className="p-2">
                 <Select onValueChange={(val) => setProjectId(val || null)}>
-                  <SelectTrigger className="w-full h-7 font-mono text-[10px]">
+                  <SelectTrigger className="w-full h-7 font-mono text-xs">
                     <SelectValue placeholder="Select Project" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1223,7 +1223,7 @@ ${level}
                 <div className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-primary" />
                   <h2 className="font-mono text-xs md:text-sm font-semibold text-foreground">POINT DATA</h2>
-                  <span className="font-mono text-[10px] md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
+                  <span className="font-mono text-xs md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
                 </div>
                 <Button size="sm" onClick={addPoint} className="font-mono text-xs gap-2">
                   <Plus className="w-3.5 h-3.5" />
@@ -1247,7 +1247,7 @@ ${level}
                     <thead>
                       <tr className="border-b border-border bg-secondary/30">
                         {["PT #", "EASTING (E)", "NORTHING (N)", "ELEVATION (Z)", "CODE", "LAYER", ""].map((h) => (
-                          <th key={h} className="px-3 md:px-4 py-3 text-left text-[10px] md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
+                          <th key={h} className="px-3 md:px-4 py-3 text-left text-xs md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
                             {h}
                           </th>
                         ))}
