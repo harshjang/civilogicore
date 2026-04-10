@@ -1231,7 +1231,7 @@ ${level}
           <div className="flex-1" />
           <div className="text-xs font-mono">
             {hasUnsavedChanges ? (
-              <span className="text-yellow-500">● Auto-saving...</span>
+              <span className="text-warning">● Auto-saving...</span>
             ) : (
               <span className="text-primary">● Auto-saved</span>
             )}
