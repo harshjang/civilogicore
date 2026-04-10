@@ -1069,14 +1069,9 @@ ${level}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-xs font-mono">
-              {hasUnsavedChanges ? (
-                <span className="text-yellow-500">● Unsaved</span>
-              ) : (
-                <span className="text-green-500">● Saved</span>
-              )}
-            </div>
-            <span className="text-xs font-mono text-muted-foreground">Layer: {activeLayer}</span>
+            <span className="text-xs font-mono text-muted-foreground">
+              {loadedDocName && <span className="text-primary">{loadedDocName}</span>}
+            </span>
           </div>
         </motion.div>
 
