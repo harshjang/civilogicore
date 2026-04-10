@@ -1231,9 +1231,9 @@ ${level}
           <div className="flex-1" />
           <div className="text-xs font-mono">
             {hasUnsavedChanges ? (
-              <span className="text-destructive">● Unsaved</span>
+              <span className="text-yellow-500">● Auto-saving...</span>
             ) : (
-              <span className="text-primary">● Saved</span>
+              <span className="text-primary">● Auto-saved</span>
             )}
           </div>
         </motion.div>
