@@ -1216,8 +1216,7 @@ ${level}
             ) : (
               <span className="text-primary">● Saved</span>
             )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </div>
         </motion.div>
 
         {activeModule === "Survey" && (
