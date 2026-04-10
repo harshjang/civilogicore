@@ -198,28 +198,60 @@ useEffect(() => {
   setHasUnsavedChanges(dirty);
 }, [points]);
 
+// Auto-save: local immediately, DB after 3s debounce
 useEffect(() => {
-  if (!hasUnsavedChanges) return;
+  if (points.length === 0) return;
+
+  // Always save locally for offline safety
+  savePointsLocal(points);
+
+  const dirty = points.some(p => p.isNew || p.isDirty);
+  if (!dirty || !user) return;
 
   const timer = setTimeout(async () => {
     try {
-      // 1. Save locally first (offline safety)
-      savePointsLocal(points);
+      const newPts = points.filter((p) => p.isNew);
+      const dirtyPts = points.filter((p) => p.isDirty && !p.isNew);
 
-      // 2. Save to DB if online
-      if (user) {
-        await saveAll(); // your existing function
+      const inserts = newPts.map((p) => ({
+        id: p.id,
+        user_id: user.id,
+        point_no: p.pointNo,
+        easting: parseFloat(p.easting) || 0,
+        northing: parseFloat(p.northing) || 0,
+        elevation: parseFloat(p.elevation) || 0,
+        code: p.code,
+        layer: p.layer,
+        source,
+      }));
+
+      if (inserts.length > 0) {
+        const { error } = await supabase.from("survey_points").insert(inserts);
+        if (error) { console.error("Auto-save insert failed", error); return; }
       }
 
-      toast.success("Auto-saved");
+      for (const p of dirtyPts) {
+        const { error } = await supabase.from("survey_points").update({
+          point_no: p.pointNo,
+          easting: parseFloat(p.easting) || 0,
+          northing: parseFloat(p.northing) || 0,
+          elevation: parseFloat(p.elevation) || 0,
+          code: p.code,
+          layer: p.layer,
+          source,
+        }).eq("id", p.id);
+        if (error) { console.error("Auto-save update failed", error); return; }
+      }
+
+      setPoints(points.map((p) => ({ ...p, isNew: false, isDirty: false })));
+      setHasUnsavedChanges(false);
     } catch (err) {
-      console.error(err);
-      toast.error("Auto-save failed");
+      console.error("Auto-save error", err);
     }
-  }, 2000); // 2 sec debounce
+  }, 3000);
 
   return () => clearTimeout(timer);
-}, [points]);
+}, [points, user, source]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
