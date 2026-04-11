@@ -1,7 +1,6 @@
 import { savePointsLocal } from "@/lib/offline/saveLocal";
 import { loadPointsLocal } from "@/lib/offline/loadLocal";
 import { syncPoints } from "@/lib/offline/sync";
-import WorkspaceToolbar from "@/components/ui/WorkspaceToolbar";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { generateAlignment } from "@/lib/road/alignment";
 import { generateVerticalProfile } from "@/lib/road/verticalProfile";
@@ -15,7 +14,7 @@ const TerrainViewer = lazy(() => import("@/components/survey/TerrainViewer"));
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus, MoreVertical, Settings2, Radio, Pencil, ChevronDown } from "lucide-react";
+import { MapPin, Upload, Plus, Trash2, Download, Layers, Save, FileText, FilePlus, MoreVertical, Settings2, Radio, Pencil, ChevronDown, Undo2, Redo2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -108,55 +107,6 @@ export default function SurveyData() {
     Object.fromEntries(defaultLayers.map(l => [l, true]))
   );
 
-  const ToolbarGroup = ({ label, children }: any) => {
-    const [open, setOpen] = useState(false);
-    const [locked, setLocked] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    // Close on outside click
-    useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (ref.current && !ref.current.contains(e.target as Node)) {
-          setOpen(false);
-          setLocked(false);
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    return (
-      <div
-        ref={ref}
-        className="relative"
-        onMouseEnter={() => {
-          if (!locked) setOpen(true);
-        }}
-        onMouseLeave={() => {
-          if (!locked) setOpen(false);
-        }}
-      >
-        {/* Trigger */}
-        <div
-          onClick={() => {
-            setOpen(true);
-            setLocked((prev) => !prev);
-          }}
-          className="px-3 py-2 text-xs font-mono bg-muted rounded-md cursor-pointer hover:bg-muted/70"
-        >
-          {label}
-        </div>
-
-        {/* Dropdown */}
-        {open && (
-          <div className="absolute top-full left-0 mt-1 flex flex-col gap-1 bg-card border border-border rounded-md p-2 shadow-xl z-50 min-w-[180px]">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
   const [activeLayer, setActiveLayer] = useState("Boundary");
   const runCommand = () => {
     const cmd = command.toLowerCase();
@@ -194,26 +144,13 @@ export default function SurveyData() {
   }, []);
 
   useEffect(() => {
-    if (points.length === 0) return;
-
-    const timer = setTimeout(() => {
-      savePointsLocal(points);
-      console.log("Auto-saved locally");
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [points]);
-
-  useEffect(() => {
     const loadOffline = async () => {
       const local = await loadPointsLocal();
-
       if (local.length > 0) {
         setPoints(local);
         console.log("Loaded offline data");
       }
     };
-
     loadOffline();
   }, []);
 
@@ -232,56 +169,88 @@ export default function SurveyData() {
   }, []);
 
   useEffect(() => {
-    const handleOnline = () => {
-      if (user && projectId) {
-        syncPoints(user.id, projectId);
-        toast.success("Synced with server");
-      }
-    };
+  const handleOnline = () => {
+    if (user && projectId) {
+      syncPoints(user.id, projectId);
+      toast.success("Synced with server");
+    }
+  };
 
-    window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, [user, projectId]);
-
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [hasUnsavedChanges]);
+  window.addEventListener("online", handleOnline);
+  return () => window.removeEventListener("online", handleOnline);
+}, [user, projectId]);
 
   useEffect(() => {
-    const dirty = points.some(p => p.isNew || p.isDirty);
-    setHasUnsavedChanges(dirty);
-  }, [points]);
+  const handler = (e: BeforeUnloadEvent) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  };
 
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
+  window.addEventListener("beforeunload", handler);
+  return () => window.removeEventListener("beforeunload", handler);
+}, [hasUnsavedChanges]);
 
-    const timer = setTimeout(async () => {
-      try {
-        // 1. Save locally first (offline safety)
-        savePointsLocal(points);
+useEffect(() => {
+  const dirty = points.some(p => p.isNew || p.isDirty);
+  setHasUnsavedChanges(dirty);
+}, [points]);
 
-        // 2. Save to DB if online
-        if (user) {
-          await saveAll(); // your existing function
-        }
+// Auto-save: local immediately, DB after 3s debounce
+useEffect(() => {
+  if (points.length === 0) return;
 
-        toast.success("Auto-saved");
-      } catch (err) {
-        console.error(err);
-        toast.error("Auto-save failed");
+  // Always save locally for offline safety
+  savePointsLocal(points);
+
+  const dirty = points.some(p => p.isNew || p.isDirty);
+  if (!dirty || !user) return;
+
+  const timer = setTimeout(async () => {
+    try {
+      const newPts = points.filter((p) => p.isNew);
+      const dirtyPts = points.filter((p) => p.isDirty && !p.isNew);
+
+      const inserts = newPts.map((p) => ({
+        id: p.id,
+        user_id: user.id,
+        point_no: p.pointNo,
+        easting: parseFloat(p.easting) || 0,
+        northing: parseFloat(p.northing) || 0,
+        elevation: parseFloat(p.elevation) || 0,
+        code: p.code,
+        layer: p.layer,
+        source,
+      }));
+
+      if (inserts.length > 0) {
+        const { error } = await supabase.from("survey_points").insert(inserts);
+        if (error) { console.error("Auto-save insert failed", error); return; }
       }
-    }, 2000); // 2 sec debounce
 
-    return () => clearTimeout(timer);
-  }, [points]);
+      for (const p of dirtyPts) {
+        const { error } = await supabase.from("survey_points").update({
+          point_no: p.pointNo,
+          easting: parseFloat(p.easting) || 0,
+          northing: parseFloat(p.northing) || 0,
+          elevation: parseFloat(p.elevation) || 0,
+          code: p.code,
+          layer: p.layer,
+          source,
+        }).eq("id", p.id);
+        if (error) { console.error("Auto-save update failed", error); return; }
+      }
+
+      setPoints(points.map((p) => ({ ...p, isNew: false, isDirty: false })));
+      setHasUnsavedChanges(false);
+    } catch (err) {
+      console.error("Auto-save error", err);
+    }
+  }, 3000);
+
+  return () => clearTimeout(timer);
+}, [points, user, source]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -560,32 +529,32 @@ export default function SurveyData() {
   }, [points])
 
   useEffect(() => {
-    const dirty = points.some(p => p.isNew || p.isDirty);
-    setHasUnsavedChanges(dirty);
-  }, [points]);
+  const dirty = points.some(p => p.isNew || p.isDirty);
+  setHasUnsavedChanges(dirty);
+}, [points]);
 
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
+useEffect(() => {
+  if (!hasUnsavedChanges) return;
 
-    const timer = setTimeout(async () => {
-      try {
-        // 1. Save locally first (offline safety)
-        savePointsLocal(points);
+  const timer = setTimeout(async () => {
+    try {
+      // 1. Save locally first (offline safety)
+      savePointsLocal(points);
 
-        // 2. Save to DB if online
-        if (user) {
-          await saveAll(); // your existing function
-        }
-
-        toast.success("Auto-saved");
-      } catch (err) {
-        console.error(err);
-        toast.error("Auto-save failed");
+      // 2. Save to DB if online
+      if (user) {
+        await saveAll(); // your existing function
       }
-    }, 2000); // 2 sec debounce
 
-    return () => clearTimeout(timer);
-  }, [points]);
+      toast.success("Auto-saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Auto-save failed");
+    }
+  }, 2000); // 2 sec debounce
+
+  return () => clearTimeout(timer);
+}, [points]);
 
   useEffect(() => {
 
@@ -743,16 +712,16 @@ export default function SurveyData() {
   }, [user, projectId]);
 
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
+  const handler = (e: BeforeUnloadEvent) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  };
 
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [hasUnsavedChanges]);
+  window.addEventListener("beforeunload", handler);
+  return () => window.removeEventListener("beforeunload", handler);
+}, [hasUnsavedChanges]);
 
   // Export DXF
   const contourInterval = 1; // meters
@@ -1102,171 +1071,175 @@ ${level}
     toast.success("DXF file exported!");
   };
   return (
-
     <div className="flex h-screen overflow-hidden">
-
-      <div className="flex-1 relative overflow-auto p-4 md:p-8 space-y-6 pt-14 md:pt-8">
-        <WorkspaceToolbar />
+      <div className="flex-1 relative overflow-auto p-3 md:p-6 space-y-3 pt-14 md:pt-6">
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={processCSV} />
 
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-xl md:text-2xl font-mono font-bold text-foreground">Survey Data</h1>
-          <p className="text-xs md:text-sm text-muted-foreground font-mono mt-1">
-            COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
-            {loadedDocName && <span className="text-primary ml-2">· Loaded: {loadedDocName}</span>}
-          </p>
-          <div className="flex items-center gap-2 border-b border-border pb-2 mb-4">
-
-            {["Survey", "Terrain", "Road", "Hydrology", "Utilities", "AI"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveModule(tab)}
-                className={`
-        px-4 py-2 text-xs font-mono rounded-md transition-all
-        ${activeModule === tab
-                    ? "bg-primary text-primary-foreground glow-cyan"
-                    : "bg-muted text-muted-foreground hover:bg-muted/70"}
-      `}
-              >
-                {tab.toUpperCase()}
-              </button>
-            ))}
-
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg md:text-xl font-mono font-bold text-foreground tracking-wider">
+              Survey Data
+            </h1>
+            <p className="text-xs md:text-xs text-muted-foreground font-mono mt-0.5 tracking-wide">
+              COORDINATE INPUT · LAYER MANAGEMENT · DXF EXPORT
+              {loadedDocName && <span className="text-primary ml-2">· {loadedDocName}</span>}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-muted-foreground">
+              {loadedDocName && <span className="text-primary">{loadedDocName}</span>}
+            </span>
           </div>
         </motion.div>
 
-        {/* Source & Controls */}
+        {/* Module Tabs */}
+        <div className="flex items-center gap-1.5 border-b border-border pb-2">
+          {["Survey", "Terrain", "Road", "Hydrology", "Utilities", "AI"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveModule(tab)}
+              className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all ${
+                activeModule === tab
+                  ? "bg-primary text-primary-foreground shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
+              }`}
+            >
+              {tab.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Toolbar — compact row of dropdown groups + source selector */}
         <motion.div
-          className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-4 md:p-5 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 md:gap-4"
-          initial={{ opacity: 0, y: 10 }}
+          className="flex flex-wrap items-center gap-1.5"
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
         >
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            <span className="font-mono text-xs text-muted-foreground uppercase">Source:</span>
+          {/* Source */}
+          <div className="flex items-center gap-1.5 mr-1">
+            <MapPin className="w-3 h-3 text-primary" />
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger className="w-32 h-7 font-mono text-xs bg-secondary border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="total-station">Total Station</SelectItem>
+                <SelectItem value="dgps">DGPS</SelectItem>
+                <SelectItem value="drone">Survey Drone</SelectItem>
+                <SelectItem value="manual">Manual Entry</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={source} onValueChange={setSource}>
-            <SelectTrigger className="w-full sm:w-48 font-mono text-sm bg-secondary border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="total-station">Total Station</SelectItem>
-              <SelectItem value="dgps">DGPS</SelectItem>
-              <SelectItem value="drone">Survey Drone</SelectItem>
-              <SelectItem value="manual">Manual Entry</SelectItem>
-            </SelectContent>
-          </Select>
 
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto sm:ml-auto">
+          <div className="w-px h-5 bg-border" />
 
-            <div className="text-xs font-mono">
-              {hasUnsavedChanges ? (
-                <span className="text-yellow-500">● Unsaved</span>
-              ) : (
-                <span className="text-green-500">● Saved</span>
-              )}
-            </div>
+          {/* Data dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
+                <FileText className="w-3 h-3" /> Data <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs">
+              <DropdownMenuItem onClick={handleImportCSV}>Import CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportDXF}>Export DXF</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSaveDialogOpen(true)}>Save to Documents</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* EDIT */}
-            <ToolbarGroup label="Edit">
-              <Button onClick={undo} disabled={!canUndo}>Undo</Button>
-              <Button onClick={redo} disabled={!canRedo}>Redo</Button>
-              <Button onClick={addPoint} disabled={!canEdit(role)}>Add Point</Button>
-              <Button onClick={saveAll} disabled={!canEdit(role)}>Save</Button>
-            </ToolbarGroup>
+          {/* Mode dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
+                <Settings2 className="w-3 h-3" /> Mode <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs">
+              <DropdownMenuItem onClick={() => { setLiveMode(!liveMode); toast.success(`Live ${!liveMode ? "enabled" : "disabled"}`); }}>
+                {liveMode ? "● Live ON" : "○ Live OFF"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setEditPlots(!editPlots); toast.success("Edit mode toggled"); }}>
+                {editPlots ? "● Edit Plots ON" : "○ Edit Plots OFF"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* DATA */}
-            <ToolbarGroup label="Data">
-              <Button onClick={handleImportCSV}>Import CSV</Button>
-              <Button onClick={exportDXF}>Export DXF</Button>
-              <Button onClick={() => setSaveDialogOpen(true)}>Save Docs</Button>
-            </ToolbarGroup>
-
-            {/* PROJECT */}
-            <ToolbarGroup label="Project">
-              <Select onValueChange={(val) => setProjectId(val || null)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button disabled={!projectId} onClick={() => {
+          {/* Project dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
+                <Layers className="w-3 h-3" /> Project <ChevronDown className="w-2.5 h-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="font-mono text-xs min-w-[200px]">
+              <div className="p-2">
+                <Select onValueChange={(val) => setProjectId(val || null)}>
+                  <SelectTrigger className="w-full h-7 font-mono text-xs">
+                    <SelectValue placeholder="Select Project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={!projectId} onClick={() => {
                 if (!user) return toast.error("Login required");
-                if (!projectId) return toast.error("Please select a project");
+                if (!projectId) return toast.error("Select a project");
                 syncPoints(user.id, projectId);
                 toast.success("Sync started");
               }}>
                 Sync Now
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="w-px h-5 bg-border" />
+
+          {/* Undo / Redo / Clear */}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo} title="Undo">
+            <Undo2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={!canRedo} title="Redo">
+            <Redo2 className="w-3.5 h-3.5" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1" disabled={!canEdit(role)}>
+                <XCircle className="w-3 h-3" /> Clear
               </Button>
-            </ToolbarGroup>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear all points?</AlertDialogTitle>
+                <AlertDialogDescription>This will remove all survey points from the workspace. This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { setPoints([]); toast.success("All points cleared"); }}>Clear</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-            {/* MODE */}
-            <ToolbarGroup label="Mode">
-              <Button onClick={() => {
-                setLiveMode(!liveMode);
-                toast.success(`Live ${!liveMode ? "enabled" : "disabled"}`);
-              }}>
-                {liveMode ? "Live ON" : "Live OFF"}
-              </Button>
-
-              <Button onClick={() => {
-                setEditPlots(!editPlots);
-                toast.success("Edit mode toggled");
-              }}>
-                Edit Plots
-              </Button>
-            </ToolbarGroup>
-
-            {/* PLOT */}
-
-            <Button onClick={() => {
-              if (!canEdit(role)) return toast.error("No permission");
-              setPoints([]);
-              toast.success("Entries cleared");
-            }}>
-              Clear
-            </Button>
-
-
+          {/* Spacer + Saved status */}
+          <div className="flex-1" />
+          <div className="text-xs font-mono">
+            {hasUnsavedChanges ? (
+              <span className="text-warning">● Auto-saving...</span>
+            ) : (
+              <span className="text-primary">● Auto-saved</span>
+            )}
           </div>
         </motion.div>
 
         {activeModule === "Survey" && (
           <>
-            {/* <div className="bg-card border border-border rounded-xl p-3 mb-4">
-              <div className="text-xs font-mono text-muted-foreground mb-2">LAYERS</div>
-
-              {defaultLayers.map(layer => (
-                <div key={layer} className="flex justify-between text-xs font-mono">
-
-                  <span
-                    className={`cursor-pointer ${activeLayer === layer ? "text-primary" : ""}`}
-                    onClick={() => setActiveLayer(layer)}
-                  >
-                    {layer}
-                  </span>
-
-                  <input
-                    type="checkbox"
-                    checked={layerVisibility[layer]}
-                    onChange={() =>
-                      setLayerVisibility(prev => ({
-                        ...prev,
-                        [layer]: !prev[layer]
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-
-            
+            {/* Data Table */}
             <motion.div
               className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan overflow-hidden"
               initial={{ opacity: 0, y: 10 }}
@@ -1277,7 +1250,7 @@ ${level}
                 <div className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-primary" />
                   <h2 className="font-mono text-xs md:text-sm font-semibold text-foreground">POINT DATA</h2>
-                  <span className="font-mono text-[10px] md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
+                  <span className="font-mono text-xs md:text-xs text-muted-foreground ml-2">({points.length} points)</span>
                 </div>
                 <Button size="sm" onClick={addPoint} className="font-mono text-xs gap-2">
                   <Plus className="w-3.5 h-3.5" />
@@ -1301,7 +1274,7 @@ ${level}
                     <thead>
                       <tr className="border-b border-border bg-secondary/30">
                         {["PT #", "EASTING (E)", "NORTHING (N)", "ELEVATION (Z)", "CODE", "LAYER", ""].map((h) => (
-                          <th key={h} className="px-3 md:px-4 py-3 text-left text-[10px] md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
+                          <th key={h} className="px-3 md:px-4 py-3 text-left text-xs md:text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
                             {h}
                           </th>
                         ))}
@@ -1359,7 +1332,7 @@ ${level}
                   </table>
                 </div>
               )}
-            </motion.div> */}
+            </motion.div>
           </>
         )}
 
@@ -1484,36 +1457,13 @@ ${level}
           />
         )}
 
-        <div className="bg-card border border-border rounded-xl backdrop-blur-md shadow-sm hover:shadow-md transition glow-cyan p-3">
-
-          <h3 className="font-mono text-xs mb-2">
-            Version History
-          </h3>
-
-          <div className="max-h-40 overflow-y-auto text-xs font-mono space-y-1">
-
-            {history.map((_, index) => (
-              <div
-                key={index}
-                className="cursor-pointer hover:text-primary"
-                onClick={() => {
-                  setPoints([...history[index]]);
-                }}
-              >
-                Version {index + 1}
-              </div>
-            ))}
+        {/* Road Profile */}
+        {activeModule === "Road" && profile.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-3 md:p-4">
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Road Profile</h2>
+            <RoadProfileChart profile={profile} />
           </div>
-
-          {/* Road Profile */}
-          {activeModule === "Road" && profile.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-3 md:p-4">
-              <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground mb-2">Road Profile</h2>
-              <RoadProfileChart profile={profile} />
-            </div>
-          )}
-
-        </div>
+        )}
 
         <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-background border-t border-border p-2 z-50">
           <Input
@@ -1525,9 +1475,6 @@ ${level}
           />
         </div>
 
-        <div className="text-xs font-mono text-muted-foreground mt-1">
-          Active Layer: {activeLayer}
-        </div>
 
       </div>
     </div >
