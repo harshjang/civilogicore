@@ -77,8 +77,6 @@ export default function SurveyData() {
     history
   } = useHistory<SurveyPoint[]>([]);
   const [profile, setProfile] = useState<any[]>([]);
-  const [editPlots, setEditPlots] = useState(false);
-  const [liveMode, setLiveMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [earthwork, setEarthwork] = useState<{ cut: number, fill: number, net: number } | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -92,7 +90,7 @@ export default function SurveyData() {
   const [sections, setSections] = useState<any[]>([]);
   const [corridor, setCorridor] = useState<any[]>([]);
   const [verticalProfile, setVerticalProfile] = useState<any[]>([]);
-  const { activeTool, drawMode, setDrawMode } = useWorkspace();
+  const { activeTool, setActiveTool, drawMode, setDrawMode } = useWorkspace();
   const [projects, setProjects] = useState<any[]>([]);
   const [leftWidth, setLeftWidth] = useState(320);
   const [bottomHeight, setBottomHeight] = useState(120);
@@ -106,6 +104,13 @@ export default function SurveyData() {
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>(
     Object.fromEntries(defaultLayers.map(l => [l, true]))
   );
+
+  const [syncStatus, setSyncStatus] = useState<
+    "idle" | "syncing" | "success" | "error" | "conflict"
+  >("idle");
+
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [moveMode, setMoveMode] = useState(false);
 
   const [activeLayer, setActiveLayer] = useState("Boundary");
   const runCommand = () => {
@@ -169,68 +174,52 @@ export default function SurveyData() {
   }, []);
 
   useEffect(() => {
-  const handleOnline = () => {
-    if (user && projectId) {
-      syncPoints(user.id, projectId);
-      toast.success("Synced with server");
-    }
-  };
+    const handleOnline = () => {
+      if (user && projectId) {
+        syncPoints(user.id, projectId);
+        toast.success("Synced with server");
+      }
+    };
 
-  window.addEventListener("online", handleOnline);
-  return () => window.removeEventListener("online", handleOnline);
-}, [user, projectId]);
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [user, projectId]);
 
   useEffect(() => {
-  const handler = (e: BeforeUnloadEvent) => {
-    if (hasUnsavedChanges) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-  };
-
-  window.addEventListener("beforeunload", handler);
-  return () => window.removeEventListener("beforeunload", handler);
-}, [hasUnsavedChanges]);
-
-useEffect(() => {
-  const dirty = points.some(p => p.isNew || p.isDirty);
-  setHasUnsavedChanges(dirty);
-}, [points]);
-
-// Auto-save: local immediately, DB after 3s debounce
-useEffect(() => {
-  if (points.length === 0) return;
-
-  // Always save locally for offline safety
-  savePointsLocal(points);
-
-  const dirty = points.some(p => p.isNew || p.isDirty);
-  if (!dirty || !user) return;
-
-  const timer = setTimeout(async () => {
-    try {
-      const newPts = points.filter((p) => p.isNew);
-      const dirtyPts = points.filter((p) => p.isDirty && !p.isNew);
-
-      const inserts = newPts.map((p) => ({
-        id: p.id,
-        user_id: user.id,
-        point_no: p.pointNo,
-        easting: parseFloat(p.easting) || 0,
-        northing: parseFloat(p.northing) || 0,
-        elevation: parseFloat(p.elevation) || 0,
-        code: p.code,
-        layer: p.layer,
-        source,
-      }));
-
-      if (inserts.length > 0) {
-        const { error } = await supabase.from("survey_points").insert(inserts);
-        if (error) { console.error("Auto-save insert failed", error); return; }
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
       }
+    };
 
-      for (const p of dirtyPts) {
-        const { error } = await supabase.from("survey_points").update({
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const dirty = points.some(p => p.isNew || p.isDirty);
+    setHasUnsavedChanges(dirty);
+  }, [points]);
+
+  // Auto-save: local immediately, DB after 3s debounce
+  useEffect(() => {
+    if (points.length === 0) return;
+
+    // Always save locally for offline safety
+    savePointsLocal(points);
+
+    const dirty = points.some(p => p.isNew || p.isDirty);
+    if (!dirty || !user) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const newPts = points.filter((p) => p.isNew);
+        const dirtyPts = points.filter((p) => p.isDirty && !p.isNew);
+
+        const inserts = newPts.map((p) => ({
+          id: p.id,
+          user_id: user.id,
           point_no: p.pointNo,
           easting: parseFloat(p.easting) || 0,
           northing: parseFloat(p.northing) || 0,
@@ -238,19 +227,42 @@ useEffect(() => {
           code: p.code,
           layer: p.layer,
           source,
-        }).eq("id", p.id);
-        if (error) { console.error("Auto-save update failed", error); return; }
+        }));
+
+        if (inserts.length > 0) {
+          const { error } = await supabase.from("survey_points").insert(inserts);
+          if (error) { console.error("Auto-save insert failed", error); return; }
+        }
+
+        for (const p of dirtyPts) {
+          const { error } = await supabase.from("survey_points").update({
+            point_no: p.pointNo,
+            easting: parseFloat(p.easting) || 0,
+            northing: parseFloat(p.northing) || 0,
+            elevation: parseFloat(p.elevation) || 0,
+            code: p.code,
+            layer: p.layer,
+            source,
+          }).eq("id", p.id);
+          if (error) { console.error("Auto-save update failed", error); return; }
+        }
+
+        setPoints(points.map((p) => ({ ...p, isNew: false, isDirty: false })));
+        setHasUnsavedChanges(false);
+        setSyncStatus("syncing");
+
+        await saveAll();
+
+        setSyncStatus("success");
+
+        setTimeout(() => setSyncStatus("idle"), 1000);
+      } catch (err) {
+        console.error("Auto-save error", err);
       }
+    }, 3000);
 
-      setPoints(points.map((p) => ({ ...p, isNew: false, isDirty: false })));
-      setHasUnsavedChanges(false);
-    } catch (err) {
-      console.error("Auto-save error", err);
-    }
-  }, 3000);
-
-  return () => clearTimeout(timer);
-}, [points, user, source]);
+    return () => clearTimeout(timer);
+  }, [points, user, source]);
 
   // Load points from DB (skip if CSV was passed via navigation)
   useEffect(() => {
@@ -346,10 +358,54 @@ useEffect(() => {
     setProfile(prof)
   }, [points])
 
+  useEffect(() => {
+    if (alignment.length < 2) return;
+
+    const aligned = generateAlignment(alignment);
+
+    // prevent loop
+    if (JSON.stringify(aligned) !== JSON.stringify(alignment)) {
+      setAlignment(aligned);
+    }
+  }, [alignment]);
+
   // Live Total Station Listener
   useEffect(() => {
 
-    if (!liveMode) return;
+    const processSmartPoint = (pt: SurveyPoint, existing: SurveyPoint[]) => {
+      let corrected = { ...pt };
+
+      // 🔹 1. Noise smoothing (moving average)
+      if (existing.length > 0) {
+        const last = existing[existing.length - 1];
+
+        corrected.easting = String(
+          (parseFloat(pt.easting) + parseFloat(last.easting)) / 2
+        );
+
+        corrected.northing = String(
+          (parseFloat(pt.northing) + parseFloat(last.northing)) / 2
+        );
+
+        corrected.elevation = String(
+          (parseFloat(pt.elevation) + parseFloat(last.elevation)) / 2
+        );
+      }
+
+      // 🔹 2. Auto layer detection
+      const z = parseFloat(corrected.elevation);
+
+      if (z > 100) corrected.layer = "Contour";
+      else if (z < 5) corrected.layer = "Drainage";
+      else corrected.layer = "Boundary";
+
+      // 🔹 3. Auto coding
+      if (Math.random() > 0.85) corrected.code = "TP";
+
+      return corrected;
+    };
+
+    if (source !== "total-station" && source !== "smart-station") return;
 
     if (!import.meta.env.VITE_WS_URL) return;
 
@@ -378,7 +434,13 @@ useEffect(() => {
 
       toast.success("Live point received from Total Station");
 
-      setPoints([...points, newPoint]);
+      let finalPoint = newPoint;
+
+      if (source === "smart-station") {
+        finalPoint = processSmartPoint(newPoint, points);
+      }
+
+      setPoints([...points, finalPoint]);
 
     };
 
@@ -390,7 +452,7 @@ useEffect(() => {
       ws.close();
     };
 
-  }, [liveMode]);
+  }, [source]);
 
   const addPoint = () => {
     if (!canEdit(role)) {
@@ -424,7 +486,16 @@ useEffect(() => {
   };
 
   const updatePoint = (id: string, field: keyof SurveyPoint, value: string) => {
-    setPoints(points.map((p) => (p.id === id ? { ...p, [field]: value, isDirty: true } : p)));
+    setPoints(points.map((p) =>
+      p.id === id
+        ? { ...p, [field]: value, isDirty: true }
+        : p
+    ));
+
+    if (moveMode) {
+      setMoveMode(false);
+      setActiveTool(null);
+    }
   };
 
   const saveAll = async () => {
@@ -529,70 +600,113 @@ useEffect(() => {
   }, [points])
 
   useEffect(() => {
-  const dirty = points.some(p => p.isNew || p.isDirty);
-  setHasUnsavedChanges(dirty);
-}, [points]);
+    const dirty = points.some(p => p.isNew || p.isDirty);
+    setHasUnsavedChanges(dirty);
+  }, [points]);
 
-useEffect(() => {
-  if (!hasUnsavedChanges) return;
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
 
-  const timer = setTimeout(async () => {
-    try {
-      // 1. Save locally first (offline safety)
-      savePointsLocal(points);
+    const timer = setTimeout(async () => {
+      try {
+        // 1. Save locally first (offline safety)
+        savePointsLocal(points);
 
-      // 2. Save to DB if online
-      if (user) {
-        await saveAll(); // your existing function
+        // 2. Save to DB if online
+        if (user) {
+          await saveAll(); // your existing function
+        }
+
+        toast.success("Auto-saved");
+      } catch (err) {
+        console.error(err);
+        toast.error("Auto-save failed");
       }
+    }, 2000); // 2 sec debounce
 
-      toast.success("Auto-saved");
-    } catch (err) {
-      console.error(err);
-      toast.error("Auto-save failed");
-    }
-  }, 2000); // 2 sec debounce
-
-  return () => clearTimeout(timer);
-}, [points]);
+    return () => clearTimeout(timer);
+  }, [points]);
 
   useEffect(() => {
 
     if (!activeTool) return;
 
+    // 🟢 SURVEY
+    if (activeTool === "add") {
+      addPoint();
+    }
+
+    if (activeTool === "delete") {
+      if (!selectedPointId) {
+        toast.error("Select a point first");
+        return;
+      }
+
+      removePoint(selectedPointId);
+      setSelectedPointId(null);
+      setActiveTool(null);
+    }
+
+    if (activeTool === "move") {
+      if (!selectedPointId) {
+        toast.error("Select a point first");
+        return;
+      }
+
+      setMoveMode(true);
+      toast.success("Edit coordinates to move point");
+    }
+
+    // 🌍 TERRAIN
     if (activeTool === "alignment") {
-      setDrawMode(true);
-      toast.success("Click on terrain to draw alignment");
+      setDrawMode(prev => {
+        const next = !prev;
+
+        toast.success(
+          next ? "Alignment drawing ON" : "Alignment drawing OFF"
+        );
+
+        return next;
+      });
     }
 
     if (activeTool === "sections") {
-      const s = generateCrossSections(points);
+      if (alignment.length < 2) {
+        toast.error("Draw alignment first");
+        return;
+      }
+
+      const s = generateCrossSections(alignment, 10);
       setSections(s);
-      toast.success("Cross sections generated");
+      setActiveTool(null);
     }
 
+    if (activeTool === "contours") {
+      toast.success("Contours generated (DXF export ready)");
+      setActiveTool(null);
+    }
+
+    // 🛣️ ROAD
     if (activeTool === "profile") {
-      const vp = generateVerticalProfile(points);
+      const vp = generateVerticalProfile(alignment);
       setVerticalProfile(vp);
-      toast.success("Vertical profile generated");
+      setActiveTool(null);
     }
 
     if (activeTool === "corridor") {
       if (alignment.length === 0) {
-        toast.error("Generate alignment first");
+        toast.error("Draw alignment first");
         return;
       }
+
       const c = generateCorridor(alignment);
       setCorridor(c);
-      toast.success("Corridor generated");
+      setActiveTool(null);
     }
 
     if (activeTool === "estimate") {
       setEstimate(aiConstructionEstimator(points));
-    }
-
-    if (activeTool === "simulation") {
-      setSimulation(true);
+      setActiveTool(null);
     }
 
   }, [activeTool]);
@@ -637,6 +751,14 @@ useEffect(() => {
 
           if (payload.eventType === "UPDATE") {
             const newRow = payload.new as any;
+
+            const local = points.find(p => p.id === newRow.id);
+
+            // 🔥 conflict detection
+            if (local && local.isDirty) {
+              setSyncStatus("conflict");
+              toast.warning("Conflict detected (local vs remote)");
+            }
 
             setPoints(
               points.map(p =>
@@ -712,16 +834,16 @@ useEffect(() => {
   }, [user, projectId]);
 
   useEffect(() => {
-  const handler = (e: BeforeUnloadEvent) => {
-    if (hasUnsavedChanges) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-  };
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
 
-  window.addEventListener("beforeunload", handler);
-  return () => window.removeEventListener("beforeunload", handler);
-}, [hasUnsavedChanges]);
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
 
   // Export DXF
   const contourInterval = 1; // meters
@@ -1098,12 +1220,14 @@ ${level}
           {["Survey", "Terrain", "Road", "Hydrology", "Utilities", "AI"].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveModule(tab)}
-              className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all ${
-                activeModule === tab
-                  ? "bg-primary text-primary-foreground shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
-                  : "bg-muted text-muted-foreground hover:bg-muted/70"
-              }`}
+              onClick={() => {
+                setActiveModule(tab);
+                setActiveTool(null); // reset tool on module switch
+              }}
+              className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all ${activeModule === tab
+                ? "bg-primary text-primary-foreground shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
+                }`}
             >
               {tab.toUpperCase()}
             </button>
@@ -1121,11 +1245,12 @@ ${level}
           <div className="flex items-center gap-1.5 mr-1">
             <MapPin className="w-3 h-3 text-primary" />
             <Select value={source} onValueChange={setSource}>
-              <SelectTrigger className="w-32 h-7 font-mono text-xs bg-secondary border-border">
+              <SelectTrigger className="min-w-[140px] w-auto h-7 font-mono text-xs bg-secondary border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="total-station">Total Station</SelectItem>
+                <SelectItem value="smart-station">Smart Station</SelectItem>
                 <SelectItem value="dgps">DGPS</SelectItem>
                 <SelectItem value="drone">Survey Drone</SelectItem>
                 <SelectItem value="manual">Manual Entry</SelectItem>
@@ -1150,23 +1275,6 @@ ${level}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Mode dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
-                <Settings2 className="w-3 h-3" /> Mode <ChevronDown className="w-2.5 h-2.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="font-mono text-xs">
-              <DropdownMenuItem onClick={() => { setLiveMode(!liveMode); toast.success(`Live ${!liveMode ? "enabled" : "disabled"}`); }}>
-                {liveMode ? "● Live ON" : "○ Live OFF"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setEditPlots(!editPlots); toast.success("Edit mode toggled"); }}>
-                {editPlots ? "● Edit Plots ON" : "○ Edit Plots OFF"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {/* Project dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1188,14 +1296,6 @@ ${level}
                 </Select>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={!projectId} onClick={() => {
-                if (!user) return toast.error("Login required");
-                if (!projectId) return toast.error("Select a project");
-                syncPoints(user.id, projectId);
-                toast.success("Sync started");
-              }}>
-                Sync Now
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -1226,14 +1326,82 @@ ${level}
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Spacer + Saved status */}
+          {/* Spacer */}
           <div className="flex-1" />
-          <div className="text-xs font-mono">
-            {hasUnsavedChanges ? (
-              <span className="text-warning">● Auto-saving...</span>
-            ) : (
-              <span className="text-primary">● Auto-saved</span>
+
+          {/* Sync Now Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 font-mono text-xs gap-1"
+            disabled={!projectId}
+            onClick={async () => {
+              if (!user) return toast.error("Login required");
+              if (!projectId) return toast.error("Select a project");
+
+              try {
+                setSyncStatus("syncing");
+
+                await syncPoints(user.id, projectId);
+
+                setSyncStatus("success");
+
+                setTimeout(() => setSyncStatus("idle"), 1500);
+
+              } catch (err) {
+                console.error(err);
+                setSyncStatus("error");
+                toast.error("Sync failed");
+              }
+            }}
+          >
+            Sync Now
+          </Button>
+
+          {/* Saved status */}
+          <div className="text-xs font-mono ml-2 flex items-center gap-2">
+
+            {/* Syncing */}
+            {syncStatus === "syncing" && (
+              <span className="text-yellow-400 animate-pulse">
+                ⟳ Syncing...
+              </span>
             )}
+
+            {/* Success */}
+            {syncStatus === "success" && (
+              <span className="text-green-400">
+                ✓ Synced
+              </span>
+            )}
+
+            {/* Error */}
+            {syncStatus === "error" && (
+              <span className="text-red-400">
+                ✕ Sync Failed
+              </span>
+            )}
+
+            {/* Conflict */}
+            {syncStatus === "conflict" && (
+              <span className="text-orange-400">
+                ⚠ Conflict
+              </span>
+            )}
+
+            {/* Default */}
+            {syncStatus === "idle" && (
+              hasUnsavedChanges ? (
+                <span className="text-yellow-400 animate-pulse">
+                  ● Saving...
+                </span>
+              ) : (
+                <span className="text-green-400">
+                  ● Auto-saved
+                </span>
+              )
+            )}
+
           </div>
         </motion.div>
 
@@ -1284,21 +1452,27 @@ ${level}
                       {points
                         .filter(p => layerVisibility[p.layer])
                         .map((pt) => (
-                          <tr key={pt.id} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
+                          <tr
+                            key={pt.id}
+                            onClick={() => setSelectedPointId(pt.id)}
+                            className={`border-b border-border/50 cursor-pointer transition
+    ${selectedPointId === pt.id ? "bg-primary/20" : "hover:bg-secondary/20"}
+  `}
+                          >
                             <td className="px-3 md:px-4 py-2">
-                              <Input value={pt.pointNo} onChange={(e) => updatePoint(pt.id, "pointNo", e.target.value)} className="w-14 md:w-16 h-8 font-mono text-xs bg-secondary border-border" />
+                              <Input value={pt.pointNo} disabled={moveMode && selectedPointId !== pt.id} onChange={(e) => updatePoint(pt.id, "pointNo", e.target.value)} className="w-14 md:w-16 h-8 font-mono text-xs bg-secondary border-border" />
                             </td>
                             <td className="px-3 md:px-4 py-2">
-                              <Input value={pt.easting} onChange={(e) => updatePoint(pt.id, "easting", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
+                              <Input value={pt.easting} disabled={moveMode && selectedPointId !== pt.id} onChange={(e) => updatePoint(pt.id, "easting", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                             </td>
                             <td className="px-3 md:px-4 py-2">
-                              <Input value={pt.northing} onChange={(e) => updatePoint(pt.id, "northing", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
+                              <Input value={pt.northing} disabled={moveMode && selectedPointId !== pt.id} onChange={(e) => updatePoint(pt.id, "northing", e.target.value)} className="w-28 md:w-32 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                             </td>
                             <td className="px-3 md:px-4 py-2">
-                              <Input value={pt.elevation} onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)} className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
+                              <Input value={pt.elevation} disabled={moveMode && selectedPointId !== pt.id} onChange={(e) => updatePoint(pt.id, "elevation", e.target.value)} className="w-24 md:w-28 h-8 font-mono text-xs bg-secondary border-border" placeholder="0.000" />
                             </td>
                             <td className="px-3 md:px-4 py-2">
-                              <Select value={pt.code || undefined} onValueChange={(v) => updatePoint(pt.id, "code", v)}>
+                              <Select value={pt.code || undefined} disabled={moveMode && selectedPointId !== pt.id} onValueChange={(v) => updatePoint(pt.id, "code", v)}>
                                 <SelectTrigger className="w-20 md:w-24 h-8 font-mono text-xs bg-secondary border-border">
                                   <SelectValue placeholder="Code" />
                                 </SelectTrigger>
@@ -1322,7 +1496,13 @@ ${level}
                               </Select>
                             </td>
                             <td className="px-3 md:px-4 py-2">
-                              <button onClick={() => removePoint(pt.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removePoint(pt.id);
+                                }}
+                                className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </td>
@@ -1349,6 +1529,8 @@ ${level}
                 <Suspense fallback={<div className="text-xs font-mono p-2">Loading 3D...</div>}>
                   <TerrainViewer
                     points={points}
+                    selectedPointId={selectedPointId}
+                    setSelectedPointId={setSelectedPointId}
                     alignment={alignment}
                     sections={sections}
                     corridor={corridor}
@@ -1357,7 +1539,6 @@ ${level}
                     setAlignment={setAlignment}
                     setDrawMode={setDrawMode}
                     setEarthwork={setEarthwork}
-                    editPlots={editPlots}
                     setEstimate={setEstimate}
                     simulation={simulation}
                     setTwinStatus={setTwinStatus}
@@ -1446,6 +1627,58 @@ ${level}
           </div>
 
         )}
+
+        {/* TOOLBAR */}
+        <div className="flex gap-1.5 flex-wrap mt-2">
+
+          {/* SURVEY */}
+          {activeModule === "Survey" && (
+            <>
+              <Button size="sm" onClick={() => setActiveTool("add")}>Add</Button>
+              <Button size="sm" onClick={() => setActiveTool("delete")}>Delete</Button>
+              <Button size="sm" onClick={() => setActiveTool("move")}>Move</Button>
+            </>
+          )}
+
+          {/* TERRAIN */}
+          {activeModule === "Terrain" && (
+            <>
+              <Button
+                size="sm"
+                variant={activeTool === "alignment" ? "default" : "outline"}
+                onClick={() => setActiveTool("alignment")}
+              >
+                Alignment
+              </Button>
+
+              <Button size="sm" onClick={() => setActiveTool("sections")}>
+                Sections
+              </Button>
+
+              <Button size="sm" onClick={() => setActiveTool("contours")}>
+                Contours
+              </Button>
+            </>
+          )}
+
+          {/* ROAD */}
+          {activeModule === "Road" && (
+            <>
+              <Button size="sm" onClick={() => setActiveTool("profile")}>
+                Profile
+              </Button>
+
+              <Button size="sm" onClick={() => setActiveTool("corridor")}>
+                Corridor
+              </Button>
+
+              <Button size="sm" onClick={() => setActiveTool("estimate")}>
+                Estimate
+              </Button>
+            </>
+          )}
+
+        </div>
 
         {/* Save to Documents Dialog */}
         {user && (
