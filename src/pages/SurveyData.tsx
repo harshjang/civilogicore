@@ -407,6 +407,8 @@ export default function SurveyData() {
     };
 
     if (source !== "total-station" && source !== "smart-station") return;
+    if (!import.meta.env.VITE_WS_URL) return;
+    if (!navigator.onLine) return;
 
     if (!import.meta.env.VITE_WS_URL) return;
 
