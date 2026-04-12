@@ -34,6 +34,7 @@ interface SaveToDocumentsDialogProps {
   onOpenChange: (open: boolean) => void;
   points: SurveyPoint[];
   userId: string;
+  source: string;
 }
 
 function pointsToCSV(points: SurveyPoint[]): string {
@@ -49,6 +50,7 @@ export default function SaveToDocumentsDialog({
   onOpenChange,
   points,
   userId,
+  source,
 }: SaveToDocumentsDialogProps) {
   const [mode, setMode] = useState<"new" | "update">("new");
   const [fileName, setFileName] = useState("survey_data.csv");
@@ -121,6 +123,22 @@ export default function SaveToDocumentsDialog({
 
         if (uploadError) { toast.error("Upload failed"); console.error(uploadError); setSaving(false); return; }
 
+        const handleSave = async () => {
+          const { error } = await supabase.from("documents").insert({
+            name,
+            user_id: userId,
+            data: points,
+            source: source
+          });
+
+          if (error) {
+            toast.error("Save failed");
+          } else {
+            toast.success("Saved successfully");
+            onOpenChange(false);
+          }
+        };
+
         const { error: dbError } = await supabase.from("documents").insert({
           user_id: userId,
           name,
@@ -129,6 +147,7 @@ export default function SaveToDocumentsDialog({
           file_size: blob.size,
           storage_path: storagePath,
           status: "Active",
+          source: source
         });
 
         if (dbError) { toast.error("Failed to save document record"); console.error(dbError); setSaving(false); return; }
@@ -203,11 +222,10 @@ export default function SaveToDocumentsDialog({
                     <button
                       key={doc.id}
                       onClick={() => setSelectedDocId(doc.id)}
-                      className={`w-full text-left px-3 py-2 rounded-md font-mono text-xs transition-colors flex items-center justify-between ${
-                        selectedDocId === doc.id
+                      className={`w-full text-left px-3 py-2 rounded-md font-mono text-xs transition-colors flex items-center justify-between ${selectedDocId === doc.id
                           ? "bg-primary/10 text-primary border border-primary/30"
                           : "hover:bg-secondary text-foreground"
-                      }`}
+                        }`}
                     >
                       <span className="truncate">{doc.name}</span>
                       <span className="text-[10px] text-muted-foreground shrink-0 ml-2">

@@ -63,7 +63,7 @@ const defaultCodes = ["BM", "CP", "TP", "IP", "MH", "LP", "EP", "FH", "PP", "WV"
 export default function SurveyData() {
   const { user } = useAuth();
   const location = useLocation();
-  const [source, setSource] = useState("total-station");
+  const [source, setSource] = useState("manual");
   const [role, setRole] = useState<string>("viewer");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [presenceState, setPresenceState] = useState<any>({});
@@ -227,7 +227,6 @@ export default function SurveyData() {
           elevation: parseFloat(p.elevation) || 0,
           code: p.code,
           layer: p.layer,
-          source,
         }));
 
         if (inserts.length > 0) {
@@ -243,7 +242,6 @@ export default function SurveyData() {
             elevation: parseFloat(p.elevation) || 0,
             code: p.code,
             layer: p.layer,
-            source,
           }).eq("id", p.id);
           if (error) { console.error("Auto-save update failed", error); return; }
         }
@@ -370,93 +368,6 @@ export default function SurveyData() {
     }
   }, [alignment]);
 
-  // Live Total Station Listener
-  useEffect(() => {
-
-    const processSmartPoint = (pt: SurveyPoint, existing: SurveyPoint[]) => {
-      let corrected = { ...pt };
-
-      // 🔹 1. Noise smoothing (moving average)
-      if (existing.length > 0) {
-        const last = existing[existing.length - 1];
-
-        corrected.easting = String(
-          (parseFloat(pt.easting) + parseFloat(last.easting)) / 2
-        );
-
-        corrected.northing = String(
-          (parseFloat(pt.northing) + parseFloat(last.northing)) / 2
-        );
-
-        corrected.elevation = String(
-          (parseFloat(pt.elevation) + parseFloat(last.elevation)) / 2
-        );
-      }
-
-      // 🔹 2. Auto layer detection
-      const z = parseFloat(corrected.elevation);
-
-      if (z > 100) corrected.layer = "Contour";
-      else if (z < 5) corrected.layer = "Drainage";
-      else corrected.layer = "Boundary";
-
-      // 🔹 3. Auto coding
-      if (Math.random() > 0.85) corrected.code = "TP";
-
-      return corrected;
-    };
-
-    if (source !== "total-station" && source !== "smart-station") return;
-    if (!import.meta.env.VITE_WS_URL) return;
-    if (!navigator.onLine) return;
-
-    if (!import.meta.env.VITE_WS_URL) return;
-
-    const ws = new WebSocket(import.meta.env.VITE_WS_URL);
-
-    ws.onopen = () => {
-      console.log("Connected to Total Station server");
-    };
-
-    ws.onmessage = (msg) => {
-
-      const data = msg.data.split(",");
-
-      if (data.length < 3) return;
-
-      const newPoint: SurveyPoint = {
-        id: crypto.randomUUID(),
-        pointNo: data[0] || String(points.length + 1),
-        easting: data[1] || "0",
-        northing: data[2] || "0",
-        elevation: data[3] || "0",
-        code: "",
-        layer: "Boundary",
-        isNew: true
-      };
-
-      toast.success("Live point received from Total Station");
-
-      let finalPoint = newPoint;
-
-      if (source === "smart-station") {
-        finalPoint = processSmartPoint(newPoint, points);
-      }
-
-      setPoints([...points, finalPoint]);
-
-    };
-
-    ws.onerror = () => {
-      console.log("Total Station connection error");
-    };
-
-    return () => {
-      ws.close();
-    };
-
-  }, [source]);
-
   const addPoint = () => {
     if (!canEdit(role)) {
       toast.error("No edit permission");
@@ -523,7 +434,6 @@ export default function SurveyData() {
       elevation: parseFloat(p.elevation) || 0,
       code: p.code,
       layer: p.layer,
-      source,
     }));
 
     if (inserts.length > 0) {
@@ -539,7 +449,6 @@ export default function SurveyData() {
         elevation: parseFloat(p.elevation) || 0,
         code: p.code,
         layer: p.layer,
-        source,
       }).eq("id", p.id);
       if (error) { toast.error("Failed to update point"); console.error(error); return; }
     }
@@ -713,80 +622,6 @@ export default function SurveyData() {
     }
 
   }, [activeTool]);
-
-  useEffect(() => {
-
-    const channel = supabase
-      .channel("survey-live")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "survey_points",
-        },
-        (payload) => {
-
-          if (!payload.new && payload.eventType !== "DELETE") return;
-          if (!payload.old && payload.eventType === "DELETE") return;
-
-          console.log("Realtime update:", payload);
-
-          const mapDbToPoint = (row: any): SurveyPoint => ({
-            id: row.id,
-            pointNo: row.point_no,
-            easting: String(row.easting),
-            northing: String(row.northing),
-            elevation: String(row.elevation),
-            code: row.code,
-            layer: row.layer,
-          });
-
-          if (payload.eventType === "INSERT") {
-            const newRow = payload.new as any;
-
-            const exists = points.find(p => p.id === newRow.id);
-
-            if (!exists) {
-              setPoints([...points, mapDbToPoint(newRow)]);
-            }
-          }
-
-          if (payload.eventType === "UPDATE") {
-            const newRow = payload.new as any;
-
-            const local = points.find(p => p.id === newRow.id);
-
-            // 🔥 conflict detection
-            if (local && local.isDirty) {
-              setSyncStatus("conflict");
-              toast.warning("Conflict detected (local vs remote)");
-            }
-
-            setPoints(
-              points.map(p =>
-                p.id === newRow.id ? mapDbToPoint(newRow) : p
-              )
-            );
-          }
-
-          if (payload.eventType === "DELETE") {
-            const oldRow = payload.old as any;
-
-            setPoints(
-              points.filter(p => p.id !== oldRow.id)
-            );
-          }
-
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-
-  }, []);
 
   useEffect(() => {
 
@@ -1709,11 +1544,13 @@ ${level}
         </div>
 
         {/* Save to Documents Dialog */}
+
         {user && (
           <SaveToDocumentsDialog
             open={saveDialogOpen}
             onOpenChange={setSaveDialogOpen}
             points={points}
+            source={source}
             userId={user.id}
           />
         )}
