@@ -3,6 +3,7 @@ import {
   computeFlowAccumulation,
   extractDrainage
 } from "@/lib/survey/hydrology";
+import { getSnapPoint } from "@/lib/cad/snap";
 import { useEffect, useRef, useState } from "react";
 import Delaunator from "delaunator";
 import { generateContours } from "@/lib/survey/generateContours";
@@ -28,6 +29,8 @@ export default function TerrainViewer({
   points,
   selectedPointId,
   setSelectedPointId,
+  snapMode,
+  snapEnabled,
   alignment,
   sections,
   corridor,
@@ -43,6 +46,8 @@ export default function TerrainViewer({
   points: Point[];
   selectedPointId: string | null;
   setSelectedPointId: React.Dispatch<React.SetStateAction<string | null>>;
+  snapMode: "endpoint" | "midpoint" | "nearest";
+  snapEnabled: boolean;
   alignment: any[];
   sections: any[];
   corridor: any[];
@@ -62,32 +67,6 @@ export default function TerrainViewer({
   const [previewPoint, setPreviewPoint] = useState<any>(null);
   const [THREE, setTHREE] = useState<any>(null);
   const [OrbitControls, setOrbitControls] = useState<any>(null);
-  const getSnappedPoint = (p: any, points: Point[], THREE: any) => {
-    let snapDistance = 5;
-    let closest: any = null;
-    let minDist = Infinity;
-
-    points.forEach(pt => {
-      const dx = +pt.easting - p.x;
-      const dz = +pt.northing - p.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-
-      if (dist < snapDistance && dist < minDist) {
-        minDist = dist;
-        closest = pt;
-      }
-    });
-
-    if (closest) {
-      return new THREE.Vector3(
-        +closest.easting,
-        +closest.elevation,
-        +closest.northing
-      );
-    }
-
-    return p;
-  };
 
   useEffect(() => {
     const loadThree = async () => {
@@ -182,13 +161,29 @@ export default function TerrainViewer({
 
       if (intersects.length > 0) {
 
-        let p = intersects[0].point;
-
         // 🔥 SNAP
 
-        p = getSnappedPoint(p, points, THREE);
+        let p = intersects[0].point;
 
-        setPreviewPoint(p);
+        let finalPoint = p;
+
+        if (snapEnabled) {
+          const snap = getSnapPoint(
+            { x: p.x, y: p.y, z: p.z },
+            points.map(pt => ({
+              x: +pt.easting,
+              y: +pt.elevation,
+              z: +pt.northing
+            })),
+            snapMode
+          );
+
+          if (snap) {
+            finalPoint = new THREE.Vector3(snap.x, snap.y, snap.z);
+          }
+        }
+
+        setPreviewPoint(finalPoint);
 
         // 🔴 CURSOR DOT
         if (!previewSphere) {
@@ -198,7 +193,13 @@ export default function TerrainViewer({
           scene.add(previewSphere);
         }
 
-        previewSphere.position.copy(p);
+        previewSphere.position.copy(finalPoint);
+
+        if (snapEnabled && finalPoint !== p) {
+          previewSphere.material.color.set(0xff0000); // snapped → red
+        } else {
+          previewSphere.material.color.set(0xffff00); // normal → yellow
+        }
       }
     };
 
@@ -218,33 +219,28 @@ export default function TerrainViewer({
 
       if (intersects.length > 0) {
 
+        // 🔥 SNAP
         let p = intersects[0].point;
 
-        // 🔥 SNAP
-        let snapDistance = 5;
-        let closest: any = null;
-        let minDist = Infinity;
+        let finalPoint = p;
 
-        points.forEach(pt => {
-          const dx = +pt.easting - p.x;
-          const dz = +pt.northing - p.z;
-          const dist = Math.sqrt(dx * dx + dz * dz);
-
-          if (dist < snapDistance && dist < minDist) {
-            minDist = dist;
-            closest = pt;
-          }
-        });
-
-        if (closest) {
-          p = new THREE.Vector3(
-            +closest.easting,
-            +closest.elevation,
-            +closest.northing
+        if (snapEnabled) {
+          const snap = getSnapPoint(
+            { x: p.x, y: p.y, z: p.z },
+            points.map(pt => ({
+              x: +pt.easting,
+              y: +pt.elevation,
+              z: +pt.northing
+            })),
+            snapMode
           );
+
+          if (snap) {
+            finalPoint = new THREE.Vector3(snap.x, snap.y, snap.z);
+          }
         }
 
-        setDrawPoints(prev => [...prev, p]);
+        setDrawPoints(prev => [...prev, finalPoint]);
         setPreviewPoint(null);
       }
     };
@@ -321,7 +317,7 @@ export default function TerrainViewer({
       renderer.dispose();
     };
 
-  }, [points, drawMode, drawPoints, previewPoint]);
+  }, [points, drawMode, drawPoints, previewPoint, snapMode, snapEnabled]);
 
   useEffect(() => {
     if (drawPoints.length < 2) return;

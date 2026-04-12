@@ -113,6 +113,8 @@ export default function SurveyData() {
   const [moveMode, setMoveMode] = useState(false);
 
   const [activeLayer, setActiveLayer] = useState("Boundary");
+  const [snapMode, setSnapMode] = useState<"endpoint" | "midpoint" | "nearest">("endpoint");
+  const [snapEnabled, setSnapEnabled] = useState(true);
   const runCommand = () => {
     const cmd = command.toLowerCase();
 
@@ -123,7 +125,6 @@ export default function SurveyData() {
     else if (cmd === "redo") redo();
     else if (cmd === "clear") setPoints([]);
     else toast.error("Unknown command");
-
     setCommand("");
   };
 
@@ -1276,28 +1277,28 @@ ${level}
           </DropdownMenu>
 
           {/* Project dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 px-2 font-mono text-xs gap-1">
-                <Layers className="w-3 h-3" /> Project <ChevronDown className="w-2.5 h-2.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="font-mono text-xs min-w-[200px]">
-              <div className="p-2">
-                <Select onValueChange={(val) => setProjectId(val || null)}>
-                  <SelectTrigger className="w-full h-7 font-mono text-xs">
-                    <SelectValue placeholder="Select Project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <DropdownMenuSeparator />
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-1.5">
+            <Layers className="w-3 h-3 text-primary" />
+
+            <Select value={projectId || ""} onValueChange={(val) => setProjectId(val || null)}>
+              <SelectTrigger className="min-w-[160px] w-auto h-7 font-mono text-xs bg-secondary border-border">
+                <SelectValue placeholder="Select Project" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {projects.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+                {projectId && (
+                  <span className="text-primary ml-2 text-xs font-mono">
+                    · {projects.find(p => p.id === projectId)?.name}
+                  </span>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="w-px h-5 bg-border" />
 
@@ -1531,6 +1532,8 @@ ${level}
                     points={points}
                     selectedPointId={selectedPointId}
                     setSelectedPointId={setSelectedPointId}
+                    snapMode={snapMode}
+                    snapEnabled={snapEnabled}
                     alignment={alignment}
                     sections={sections}
                     corridor={corridor}
@@ -1658,6 +1661,29 @@ ${level}
               <Button size="sm" onClick={() => setActiveTool("contours")}>
                 Contours
               </Button>
+
+              <div className="flex gap-1.5 ml-2">
+
+                <Button
+                  size="sm"
+                  variant={snapEnabled ? "default" : "outline"}
+                  onClick={() => setSnapEnabled(!snapEnabled)}
+                >
+                  SNAP
+                </Button>
+
+                {["endpoint", "midpoint", "nearest"].map((m) => (
+                  <Button
+                    key={m}
+                    size="sm"
+                    variant={snapMode === m ? "default" : "outline"}
+                    onClick={() => setSnapMode(m as any)}
+                  >
+                    {m}
+                  </Button>
+                ))}
+
+              </div>
             </>
           )}
 
