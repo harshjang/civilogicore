@@ -1,5 +1,5 @@
 import { dbPromise } from "./db";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const syncPoints = async (userId: string, projectId?: string) => {
   const db = await dbPromise;
