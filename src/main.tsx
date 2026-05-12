@@ -4,7 +4,6 @@ import App from "./App";
 import "./index.css";
 
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
-import { AuthProvider } from "@/contexts/AuthContext";
 
 // Theme preload
 const savedTheme = localStorage.getItem("theme");
@@ -20,10 +19,8 @@ if ("serviceWorker" in navigator) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <WorkspaceProvider>
-        <App />
-      </WorkspaceProvider>
-    </AuthProvider>
+    <WorkspaceProvider>
+      <App />
+    </WorkspaceProvider>
   </React.StrictMode>
 );
