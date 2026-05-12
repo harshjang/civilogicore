@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 interface SurveyPoint {
@@ -123,22 +123,6 @@ export default function SaveToDocumentsDialog({
 
         if (uploadError) { toast.error("Upload failed"); console.error(uploadError); setSaving(false); return; }
 
-        const handleSave = async () => {
-          const { error } = await supabase.from("documents").insert({
-            name,
-            user_id: userId,
-            data: points,
-            source: source
-          });
-
-          if (error) {
-            toast.error("Save failed");
-          } else {
-            toast.success("Saved successfully");
-            onOpenChange(false);
-          }
-        };
-
         const { error: dbError } = await supabase.from("documents").insert({
           user_id: userId,
           name,
@@ -147,7 +131,6 @@ export default function SaveToDocumentsDialog({
           file_size: blob.size,
           storage_path: storagePath,
           status: "Active",
-          source: source
         });
 
         if (dbError) { toast.error("Failed to save document record"); console.error(dbError); setSaving(false); return; }
