@@ -3,7 +3,7 @@ import { Layers, FileText, Activity, Crosshair, Ruler, MapPin } from "lucide-rea
 import StatCard from "@/components/StatCard";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Index() {
