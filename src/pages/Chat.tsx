@@ -6,15 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseUrl } from "@/lib/supabase";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const CHAT_URL = supabaseUrl ? `${supabaseUrl}/functions/v1/chat` : "";
+const CHAT_URL = `${supabaseUrl}/functions/v1/chat`;
 
 const suggestions = [
   { icon: Calculator, text: "Calculate earthwork volume for a road embankment" },
@@ -245,5 +244,6 @@ export default function Chat() {
     </div>
   );
 }
+
 
 
