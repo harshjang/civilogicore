@@ -25,3 +25,5 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+# here.now local publish state
+.herenow/

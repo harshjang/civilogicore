@@ -86,7 +86,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <span>Sign Out</span>
         </button>
         <div className="mt-4 px-4">
-          <p className="font-mono text-[10px] text-muted-foreground">v1.0.0 · GEOSPATIAL</p>
+          <p className="font-mono text-[10px] text-muted-foreground">v1.0.0 - GEOSPATIAL</p>
         </div>
       </div>
     </div>

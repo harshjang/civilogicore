@@ -282,8 +282,6 @@ export default function TerrainViewer({
       if (drawPoints.length > 0 && previewPoint) {
         const last = drawPoints[drawPoints.length - 1];
         const dist = last.distanceTo(previewPoint);
-
-        console.log("Distance:", dist.toFixed(2), "m");
       }
 
       if (allPoints.length > 1) {
@@ -329,8 +327,6 @@ export default function TerrainViewer({
     }));
 
     const sec = generateCrossSections(alignmentData, 10);
-
-    console.log("Sections:", sec);
 
   }, [drawPoints]);
 

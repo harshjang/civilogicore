@@ -154,7 +154,6 @@ export default function SurveyData() {
       const local = await loadPointsLocal();
       if (local.length > 0) {
         setPoints(local);
-        console.log("Loaded offline data");
       }
     };
     loadOffline();
@@ -1578,3 +1577,4 @@ ${level}
     </div >
   );
 }
+

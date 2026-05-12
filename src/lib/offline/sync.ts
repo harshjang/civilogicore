@@ -25,6 +25,4 @@ export const syncPoints = async (userId: string, projectId?: string) => {
       await db.put("points", pt);
     }
   }
-
-  console.log("Sync completed");
 };
